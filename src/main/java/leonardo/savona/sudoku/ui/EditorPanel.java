@@ -21,7 +21,7 @@ public class EditorPanel extends JPanel {
     private final JButton clearBtn;
     private final JButton deleteBtn;
     private final JLabel statusLabel;
-    private final JComboBox<String> difficultyCombo;   // 👈 nuovo
+    private final JComboBox<String> difficultyCombo;
 
     private final FileSudokuRepository repo = new FileSudokuRepository();
     private final DefaultListModel<SudokuTemplateEntry> listModel = new DefaultListModel<>();
@@ -33,18 +33,14 @@ public class EditorPanel extends JPanel {
         this.parent = parent;
         this.board = new SudokuBoard();
 
-        this.gridPanel = new SudokuGridPanel(board);
-        this.gridPanel.setMode(SudokuGridPanel.Mode.EDITOR);
-        this.gridPanel.setOnChange(this::updateValidation);
-
         setLayout(new BorderLayout());
 
-        // lista a sinistra
+        // ===== COLONNA SINISTRA: anteprime =====
         previewList.setCellRenderer(new SudokuPreviewRenderer());
         previewList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         JScrollPane scroll = new JScrollPane(previewList);
         scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scroll.setPreferredSize(new Dimension(180, 0));
+        scroll.setPreferredSize(new Dimension(180, 0)); // stessa larghezza del solver
         add(scroll, BorderLayout.WEST);
 
         previewList.addListSelectionListener(e -> {
@@ -56,16 +52,24 @@ public class EditorPanel extends JPanel {
             }
         });
 
-        // centro
+        // ===== PARTE DESTRA: griglia + barra comandi =====
+        // pannello destro che contiene (CENTER=griglia, SOUTH=pulsanti)
+        JPanel rightPanel = new JPanel(new BorderLayout());
+        add(rightPanel, BorderLayout.CENTER);
+
+        // griglia al centro, centrata
+        this.gridPanel = new SudokuGridPanel(board);
+        this.gridPanel.setMode(SudokuGridPanel.Mode.EDITOR);
+        this.gridPanel.setOnChange(this::updateValidation);
+
         JPanel centerWrapper = new JPanel(new GridBagLayout());
         centerWrapper.add(gridPanel);
-        add(centerWrapper, BorderLayout.CENTER);
+        rightPanel.add(centerWrapper, BorderLayout.CENTER);
 
-        // basso
+        // barra comandi in basso (solo nella parte destra)
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.LEFT));
         bottom.add(new JLabel("Editor: 1–9, 0/Canc per svuotare"));
 
-        // difficoltà
         bottom.add(new JLabel("   Difficoltà:"));
         difficultyCombo = new JComboBox<>(new String[]{"Facile", "Medio", "Difficile", "Esperto"});
         difficultyCombo.setSelectedItem("Medio");
@@ -89,8 +93,9 @@ public class EditorPanel extends JPanel {
         bottom.add(Box.createHorizontalStrut(20));
         bottom.add(statusLabel);
 
-        add(bottom, BorderLayout.SOUTH);
+        rightPanel.add(bottom, BorderLayout.SOUTH);
 
+        // carico subito i template
         reloadTemplates();
         updateValidation();
     }
@@ -101,7 +106,7 @@ public class EditorPanel extends JPanel {
         this.currentFile = entry.file;
         this.deleteBtn.setEnabled(true);
 
-        // carica difficoltà
+        // carichiamo la difficoltà dai metadati, se c'è
         if (entry.metadata != null) {
             String d = entry.metadata.getDifficulty();
             if (d != null) difficultyCombo.setSelectedItem(d);
@@ -117,7 +122,7 @@ public class EditorPanel extends JPanel {
         this.gridPanel.setBoard(this.board);
         this.currentFile = null;
         this.deleteBtn.setEnabled(false);
-        difficultyCombo.setSelectedItem("Medio");
+        this.difficultyCombo.setSelectedItem("Medio");
         updateValidation();
     }
 
@@ -134,6 +139,7 @@ public class EditorPanel extends JPanel {
         reloadTemplates();
     }
 
+    // >>> versione corretta che non azzera metadati esistenti <<<
     private void saveTemplate() {
         if (!saveBtn.isEnabled()) return;
 
@@ -144,16 +150,11 @@ public class EditorPanel extends JPanel {
         // caso 1: sto salvando LO STESSO sudoku (stesso file)
         if (currentFile != null && currentFile.equals(newFile)) {
             try {
-                // 1. salvo la board (magari hai cambiato dei numeri)
                 repo.save(board, newFile);
 
-                // 2. carico i metadati esistenti
+                // carico metadati esistenti e aggiorno solo la difficoltà
                 SudokuMetadata meta = repo.loadMetadata(newFile);
-
-                // 3. aggiorno solo la difficoltà
                 meta.setDifficulty((String) difficultyCombo.getSelectedItem());
-
-                // 4. risalvo i metadati -> mantiene best time e solved
                 repo.saveMetadata(newFile, meta);
 
                 JOptionPane.showMessageDialog(this, "Aggiornato: " + newFile.getName());
@@ -165,18 +166,13 @@ public class EditorPanel extends JPanel {
             return;
         }
 
-        // caso 2: sto salvando un sudoku NUOVO (hash diverso)
-        // quindi elimino il vecchio file (se c’era) e creo metadati nuovi
+        // caso 2: sudoku nuovo (hash diverso)
         if (currentFile != null && !currentFile.equals(newFile)) {
-            // cancello vecchio sudoku + suoi metadati
             repo.deleteWithMetadata(currentFile);
         }
 
         try {
-            // salvo il nuovo sudoku
             repo.save(board, newFile);
-
-            // creo metadati nuovi (perché è un sudoku nuovo)
             SudokuMetadata meta = new SudokuMetadata();
             meta.setDifficulty((String) difficultyCombo.getSelectedItem());
             repo.saveMetadata(newFile, meta);
