@@ -21,6 +21,7 @@ public class EditorPanel extends JPanel {
     private final JButton clearBtn;
     private final JButton deleteBtn;
     private final JLabel statusLabel;
+    private final JComboBox<String> difficultyCombo;   // 👈 nuovo
 
     private final FileSudokuRepository repo = new FileSudokuRepository();
     private final DefaultListModel<SudokuTemplateEntry> listModel = new DefaultListModel<>();
@@ -62,25 +63,29 @@ public class EditorPanel extends JPanel {
 
         // basso
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        bottom.add(new JLabel("Editor: 1–9, 0/Canc per svuotare"));
+
+        // difficoltà
+        bottom.add(new JLabel("   Difficoltà:"));
+        difficultyCombo = new JComboBox<>(new String[]{"Facile", "Medio", "Difficile", "Esperto"});
+        difficultyCombo.setSelectedItem("Medio");
+        bottom.add(difficultyCombo);
+
         saveBtn = new JButton("Salva");
         saveBtn.addActionListener(e -> saveTemplate());
+        bottom.add(Box.createHorizontalStrut(10));
+        bottom.add(saveBtn);
 
         clearBtn = new JButton("Pulisci sudoku");
         clearBtn.addActionListener(e -> clearBoard());
+        bottom.add(clearBtn);
 
         deleteBtn = new JButton("Elimina sudoku");
         deleteBtn.addActionListener(e -> deleteCurrent());
         deleteBtn.setEnabled(false);
+        bottom.add(deleteBtn);
 
         statusLabel = new JLabel("Pronto");
-
-        bottom.add(new JLabel("Editor: 1–9, 0/Canc per svuotare"));
-        bottom.add(Box.createHorizontalStrut(15));
-        bottom.add(saveBtn);
-        bottom.add(Box.createHorizontalStrut(10));
-        bottom.add(clearBtn);
-        bottom.add(Box.createHorizontalStrut(10));
-        bottom.add(deleteBtn);
         bottom.add(Box.createHorizontalStrut(20));
         bottom.add(statusLabel);
 
@@ -95,6 +100,15 @@ public class EditorPanel extends JPanel {
         this.gridPanel.setBoard(this.board);
         this.currentFile = entry.file;
         this.deleteBtn.setEnabled(true);
+
+        // carica difficoltà
+        if (entry.metadata != null) {
+            String d = entry.metadata.getDifficulty();
+            if (d != null) difficultyCombo.setSelectedItem(d);
+        } else {
+            difficultyCombo.setSelectedItem("Medio");
+        }
+
         updateValidation();
     }
 
@@ -103,6 +117,7 @@ public class EditorPanel extends JPanel {
         this.gridPanel.setBoard(this.board);
         this.currentFile = null;
         this.deleteBtn.setEnabled(false);
+        difficultyCombo.setSelectedItem("Medio");
         updateValidation();
     }
 
@@ -122,17 +137,48 @@ public class EditorPanel extends JPanel {
     private void saveTemplate() {
         if (!saveBtn.isEnabled()) return;
 
+        // calcolo hash attuale
         String hash = SudokuHash.hash(board);
         File newFile = new File(repo.getDirectory(), hash + ".txt");
 
-        // se sto modificando un template vecchio e il nome cambia → cancello anche i metadati vecchi
+        // caso 1: sto salvando LO STESSO sudoku (stesso file)
+        if (currentFile != null && currentFile.equals(newFile)) {
+            try {
+                // 1. salvo la board (magari hai cambiato dei numeri)
+                repo.save(board, newFile);
+
+                // 2. carico i metadati esistenti
+                SudokuMetadata meta = repo.loadMetadata(newFile);
+
+                // 3. aggiorno solo la difficoltà
+                meta.setDifficulty((String) difficultyCombo.getSelectedItem());
+
+                // 4. risalvo i metadati -> mantiene best time e solved
+                repo.saveMetadata(newFile, meta);
+
+                JOptionPane.showMessageDialog(this, "Aggiornato: " + newFile.getName());
+                reloadTemplates();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Errore salvataggio: " + ex.getMessage(),
+                        "Errore", JOptionPane.ERROR_MESSAGE);
+            }
+            return;
+        }
+
+        // caso 2: sto salvando un sudoku NUOVO (hash diverso)
+        // quindi elimino il vecchio file (se c’era) e creo metadati nuovi
         if (currentFile != null && !currentFile.equals(newFile)) {
+            // cancello vecchio sudoku + suoi metadati
             repo.deleteWithMetadata(currentFile);
         }
 
         try {
+            // salvo il nuovo sudoku
             repo.save(board, newFile);
+
+            // creo metadati nuovi (perché è un sudoku nuovo)
             SudokuMetadata meta = new SudokuMetadata();
+            meta.setDifficulty((String) difficultyCombo.getSelectedItem());
             repo.saveMetadata(newFile, meta);
 
             this.currentFile = newFile;

@@ -28,7 +28,6 @@ public class FileSudokuRepository {
 
     public File getMetadataFile(File sudokuFile) {
         String name = sudokuFile.getName();
-        // es: 123abc.txt -> 123abc.meta
         int idx = name.lastIndexOf('.');
         if (idx != -1) {
             name = name.substring(0, idx);

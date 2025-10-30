@@ -6,6 +6,7 @@ import java.util.Properties;
 public class SudokuMetadata {
     private boolean solved;
     private long bestTimeMillis; // 0 = mai risolto
+    private String difficulty = "Medio";   // 👈 default
 
     public boolean isSolved() {
         return solved;
@@ -13,6 +14,16 @@ public class SudokuMetadata {
 
     public long getBestTimeMillis() {
         return bestTimeMillis;
+    }
+
+    public String getDifficulty() {
+        return difficulty;
+    }
+
+    public void setDifficulty(String difficulty) {
+        if (difficulty != null && !difficulty.isEmpty()) {
+            this.difficulty = difficulty;
+        }
     }
 
     public void updateSolved(long timeMillis) {
@@ -32,6 +43,7 @@ public class SudokuMetadata {
             p.load(in);
             m.solved = Boolean.parseBoolean(p.getProperty("solved", "false"));
             m.bestTimeMillis = Long.parseLong(p.getProperty("bestTimeMillis", "0"));
+            m.difficulty = p.getProperty("difficulty", "Medio");
         } catch (Exception ignored) {}
         return m;
     }
@@ -40,6 +52,7 @@ public class SudokuMetadata {
         Properties p = new Properties();
         p.setProperty("solved", Boolean.toString(solved));
         p.setProperty("bestTimeMillis", Long.toString(bestTimeMillis));
+        p.setProperty("difficulty", difficulty != null ? difficulty : "Medio");
         try (OutputStream out = new FileOutputStream(metaFile)) {
             p.store(out, "Sudoku metadata");
         }

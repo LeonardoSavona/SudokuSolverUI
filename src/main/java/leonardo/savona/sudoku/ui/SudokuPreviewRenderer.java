@@ -10,7 +10,7 @@ public class SudokuPreviewRenderer extends JPanel implements ListCellRenderer<Su
 
     public SudokuPreviewRenderer() {
         setOpaque(true);
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout(0, 4));
     }
 
     @Override
@@ -18,16 +18,33 @@ public class SudokuPreviewRenderer extends JPanel implements ListCellRenderer<Su
                                                   SudokuTemplateEntry value, int index,
                                                   boolean isSelected, boolean cellHasFocus) {
         removeAll();
+
         MiniBoardPanel preview = new MiniBoardPanel(value.board, value.metadata);
         add(preview, BorderLayout.CENTER);
 
+        // label difficoltà sotto
+        JLabel diffLabel = new JLabel(formatDifficulty(value.metadata));
+        diffLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        diffLabel.setFont(diffLabel.getFont().deriveFont(Font.PLAIN, 11f));
+        add(diffLabel, BorderLayout.SOUTH);
+
         if (isSelected) {
             setBackground(list.getSelectionBackground());
+            diffLabel.setForeground(list.getSelectionForeground());
         } else {
             setBackground(list.getBackground());
+            diffLabel.setForeground(Color.DARK_GRAY);
         }
+
         setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
         return this;
+    }
+
+    private String formatDifficulty(SudokuMetadata m) {
+        if (m == null) return "Diff: –";
+        String d = m.getDifficulty();
+        if (d == null || d.isEmpty()) d = "–";
+        return "Diff: " + d;
     }
 
     static class MiniBoardPanel extends JPanel {
@@ -53,16 +70,12 @@ public class SudokuPreviewRenderer extends JPanel implements ListCellRenderer<Su
             int w = getWidth();
             int h = getHeight();
 
-            // prendiamo il lato minore
             int size = Math.min(w, h);
-            // cell size intero
             int cs = size / 9;
-            // RICALCOLO: uso solo multiplo di 9 -> niente sbordi
-            size = cs * 9;
+            size = cs * 9; // 👈 niente sbordo
             int ox = (w - size) / 2;
             int oy = (h - size) / 2;
 
-            // sfondo
             g2.setColor(Color.WHITE);
             g2.fillRect(ox, oy, size, size);
 
@@ -84,14 +97,13 @@ public class SudokuPreviewRenderer extends JPanel implements ListCellRenderer<Su
             }
             g2.setFont(original);
 
-            // griglia sottile
+            // griglia fine
             g2.setColor(Color.LIGHT_GRAY);
             for (int i = 0; i <= 9; i++) {
                 int p = i * cs;
                 g2.drawLine(ox, oy + p, ox + size, oy + p);
                 g2.drawLine(ox + p, oy, ox + p, oy + size);
             }
-
             // griglia spessa
             g2.setStroke(new BasicStroke(2));
             g2.setColor(Color.BLACK);
@@ -103,7 +115,7 @@ public class SudokuPreviewRenderer extends JPanel implements ListCellRenderer<Su
 
             // overlay metadati
             if (meta != null) {
-                // best time a sinistra
+                // best time
                 if (meta.isSolved() && meta.getBestTimeMillis() > 0) {
                     String t = formatMillis(meta.getBestTimeMillis());
                     Font f = g2.getFont().deriveFont(Font.BOLD, 10f);
@@ -117,7 +129,7 @@ public class SudokuPreviewRenderer extends JPanel implements ListCellRenderer<Su
                     g2.drawString(t, ox + 2 + 4, oy + 2 + fm.getAscent());
                 }
 
-                // pallino verde a destra
+                // check
                 if (meta.isSolved()) {
                     int r = 16;
                     int px = ox + size - r - 4;
