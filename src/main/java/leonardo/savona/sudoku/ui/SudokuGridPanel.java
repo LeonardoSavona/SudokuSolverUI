@@ -11,11 +11,13 @@ public class SudokuGridPanel extends JPanel {
 
     public enum Mode { EDITOR, SOLVER }
 
-    private static final int GRID_PIXELS = 540; // dimensione fissa
+    private static final int GRID_PIXELS = 540;
     private SudokuBoard board;
+
     private int selectedRow = 0;
     private int selectedCol = 0;
     private boolean noteMode = false;
+    private boolean inputEnabled = true;   // se false non accetto numeri
     private Mode mode = Mode.SOLVER;
     private Runnable onChange = null;
 
@@ -24,7 +26,7 @@ public class SudokuGridPanel extends JPanel {
         setFocusable(true);
         setBackground(Color.WHITE);
 
-        // Mouse: selezione cella + focus
+        // selezione da mouse
         addMouseListener(new MouseAdapter() {
             @Override public void mousePressed(MouseEvent e) {
                 requestFocusInWindow();
@@ -41,33 +43,53 @@ public class SudokuGridPanel extends JPanel {
             }
         });
 
-        // Key bindings
+        // key bindings
         InputMap im = getInputMap(WHEN_FOCUSED);
         ActionMap am = getActionMap();
 
+        // tasti 1-9 (riga superiore)
         for (int k = KeyEvent.VK_1; k <= KeyEvent.VK_9; k++) {
-            int num = (k - KeyEvent.VK_0);
+            int num = k - KeyEvent.VK_0;
             String name = "NUM_" + num;
             im.put(KeyStroke.getKeyStroke(k, 0), name);
             am.put(name, new AbstractAction() {
-                @Override public void actionPerformed(ActionEvent e) { applyNumber(num); fireChange(); }
+                @Override public void actionPerformed(ActionEvent e) {
+                    applyNumber(num);
+                    fireChange();
+                }
+            });
+        }
+        // tastierino numerico 1-9
+        for (int k = KeyEvent.VK_NUMPAD1; k <= KeyEvent.VK_NUMPAD9; k++) {
+            int num = k - KeyEvent.VK_NUMPAD0;
+            String name = "NUMPAD_" + num;
+            im.put(KeyStroke.getKeyStroke(k, 0), name);
+            am.put(name, new AbstractAction() {
+                @Override public void actionPerformed(ActionEvent e) {
+                    applyNumber(num);
+                    fireChange();
+                }
             });
         }
 
+        // clear (0 / CANC / BACKSPACE)
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_0, 0), "CLEAR");
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), "CLEAR");
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, 0), "CLEAR");
         am.put("CLEAR", new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent e) { applyNumber(0); fireChange(); }
+            @Override public void actionPerformed(ActionEvent e) {
+                applyNumber(0);
+                fireChange();
+            }
         });
 
-        // frecce per muoversi
+        // frecce
         bindArrow(im, am, KeyEvent.VK_UP,    () -> { if (selectedRow > 0) selectedRow--; repaint(); });
         bindArrow(im, am, KeyEvent.VK_DOWN,  () -> { if (selectedRow < 8) selectedRow++; repaint(); });
         bindArrow(im, am, KeyEvent.VK_LEFT,  () -> { if (selectedCol > 0) selectedCol--; repaint(); });
         bindArrow(im, am, KeyEvent.VK_RIGHT, () -> { if (selectedCol < 8) selectedCol++; repaint(); });
 
-        // scorciatoia: 'N' toggla note
+        // toggle note (tasto N)
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_N, 0), "TOGGLE_NOTE");
         am.put("TOGGLE_NOTE", new AbstractAction() {
             @Override public void actionPerformed(ActionEvent e) {
@@ -88,7 +110,11 @@ public class SudokuGridPanel extends JPanel {
     private void fireChange() { if (onChange != null) onChange.run(); }
 
     public void setMode(Mode mode) { this.mode = mode; }
-    public Mode getMode() { return mode; }
+
+    public void setInputEnabled(boolean enabled) {
+        this.inputEnabled = enabled;
+        repaint();
+    }
 
     public void setBoard(SudokuBoard board) {
         this.board = board;
@@ -97,11 +123,15 @@ public class SudokuGridPanel extends JPanel {
         repaint();
     }
 
-    public void setNoteMode(boolean noteMode) { this.noteMode = noteMode; repaint(); }
+    public void setNoteMode(boolean noteMode) {
+        this.noteMode = noteMode;
+        repaint();
+    }
+
     public boolean isNoteMode() { return noteMode; }
 
-    /** Inserimento numero o nota in base alla modalità. */
     public void applyNumber(int number) {
+        if (!inputEnabled) return;           // 👈 blocco inserimenti se disattivato
         if (board == null) return;
         int r = selectedRow, c = selectedCol;
         if (r < 0 || c < 0) return;
@@ -132,19 +162,42 @@ public class SudokuGridPanel extends JPanel {
 
         Graphics2D g2 = (Graphics2D) g.create();
         int cellSize = getCellSize();
-
-        // centra la griglia fissa
         int originX = (getWidth() - GRID_PIXELS) / 2;
         int originY = (getHeight() - GRID_PIXELS) / 2;
 
-        // celle
+        boolean hasSel = selectedRow >= 0 && selectedCol >= 0;
+        int selVal = hasSel ? board.getValue(selectedRow, selectedCol) : 0;
+        int selBoxRow = (selectedRow / 3) * 3;
+        int selBoxCol = (selectedCol / 3) * 3;
+
         for (int r = 0; r < 9; r++) {
             for (int c = 0; c < 9; c++) {
                 int x = originX + c * cellSize;
                 int y = originY + r * cellSize;
 
-                // selezione
-                g2.setColor((r == selectedRow && c == selectedCol) ? new Color(220,235,255) : Color.WHITE);
+                Color bg = Color.WHITE;
+
+                // evidenziazioni (solo in solver)
+                if (mode == Mode.SOLVER && hasSel) {
+                    boolean sameRow = (r == selectedRow);
+                    boolean sameCol = (c == selectedCol);
+                    boolean sameBox = (r >= selBoxRow && r < selBoxRow + 3 &&
+                            c >= selBoxCol && c < selBoxCol + 3);
+                    if (sameRow || sameCol || sameBox) {
+                        bg = new Color(235, 243, 255);
+                    }
+                    int v = board.getValue(r, c);
+                    if (selVal != 0 && v == selVal) {
+                        bg = new Color(210, 230, 255);
+                    }
+                }
+
+                // cella selezionata
+                if (r == selectedRow && c == selectedCol) {
+                    bg = new Color(200, 220, 255);
+                }
+
+                g2.setColor(bg);
                 g2.fillRect(x, y, cellSize, cellSize);
 
                 // conflitto
@@ -198,6 +251,7 @@ public class SudokuGridPanel extends JPanel {
             g2.drawLine(originX, originY + pos, originX + GRID_PIXELS, originY + pos);
             g2.drawLine(originX + pos, originY, originX + pos, originY + GRID_PIXELS);
         }
+
         // griglia spessa
         g2.setStroke(new BasicStroke(3));
         g2.setColor(Color.BLACK);
@@ -205,6 +259,12 @@ public class SudokuGridPanel extends JPanel {
             int pos = i * cellSize;
             g2.drawLine(originX, originY + pos, originX + GRID_PIXELS, originY + pos);
             g2.drawLine(originX + pos, originY, originX + pos, originY + GRID_PIXELS);
+        }
+
+        // overlay disattivato
+        if (!inputEnabled) {
+            g2.setColor(new Color(255, 255, 255, 60));
+            g2.fillRect(originX, originY, GRID_PIXELS, GRID_PIXELS);
         }
 
         g2.dispose();

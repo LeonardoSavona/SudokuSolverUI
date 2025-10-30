@@ -19,6 +19,7 @@ public class EditorPanel extends JPanel {
     private final SudokuGridPanel gridPanel;
     private final JButton saveBtn;
     private final JButton clearBtn;
+    private final JButton deleteBtn;
     private final JLabel statusLabel;
 
     private final FileSudokuRepository repo = new FileSudokuRepository();
@@ -63,8 +64,14 @@ public class EditorPanel extends JPanel {
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.LEFT));
         saveBtn = new JButton("Salva");
         saveBtn.addActionListener(e -> saveTemplate());
+
         clearBtn = new JButton("Pulisci sudoku");
         clearBtn.addActionListener(e -> clearBoard());
+
+        deleteBtn = new JButton("Elimina sudoku");
+        deleteBtn.addActionListener(e -> deleteCurrent());
+        deleteBtn.setEnabled(false);
+
         statusLabel = new JLabel("Pronto");
 
         bottom.add(new JLabel("Editor: 1–9, 0/Canc per svuotare"));
@@ -72,6 +79,8 @@ public class EditorPanel extends JPanel {
         bottom.add(saveBtn);
         bottom.add(Box.createHorizontalStrut(10));
         bottom.add(clearBtn);
+        bottom.add(Box.createHorizontalStrut(10));
+        bottom.add(deleteBtn);
         bottom.add(Box.createHorizontalStrut(20));
         bottom.add(statusLabel);
 
@@ -85,6 +94,7 @@ public class EditorPanel extends JPanel {
         this.board = entry.board;
         this.gridPanel.setBoard(this.board);
         this.currentFile = entry.file;
+        this.deleteBtn.setEnabled(true);
         updateValidation();
     }
 
@@ -92,7 +102,21 @@ public class EditorPanel extends JPanel {
         this.board = new SudokuBoard();
         this.gridPanel.setBoard(this.board);
         this.currentFile = null;
+        this.deleteBtn.setEnabled(false);
         updateValidation();
+    }
+
+    private void deleteCurrent() {
+        if (currentFile == null) return;
+        int res = JOptionPane.showConfirmDialog(this,
+                "Vuoi davvero eliminare questo sudoku?",
+                "Conferma eliminazione",
+                JOptionPane.YES_NO_OPTION);
+        if (res != JOptionPane.YES_OPTION) return;
+
+        repo.deleteWithMetadata(currentFile);
+        clearBoard();
+        reloadTemplates();
     }
 
     private void saveTemplate() {
@@ -108,11 +132,11 @@ public class EditorPanel extends JPanel {
 
         try {
             repo.save(board, newFile);
-            // se è un sudoku nuovo, i metadati partono "vuoti" (non risolto)
             SudokuMetadata meta = new SudokuMetadata();
             repo.saveMetadata(newFile, meta);
 
             this.currentFile = newFile;
+            this.deleteBtn.setEnabled(true);
             JOptionPane.showMessageDialog(this, "Salvato: " + newFile.getName());
             reloadTemplates();
         } catch (Exception ex) {

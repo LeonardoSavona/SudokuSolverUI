@@ -26,17 +26,17 @@ public class SudokuPreviewRenderer extends JPanel implements ListCellRenderer<Su
         } else {
             setBackground(list.getBackground());
         }
-        setBorder(BorderFactory.createEmptyBorder(4,4,4,4));
+        setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
         return this;
     }
 
     static class MiniBoardPanel extends JPanel {
-        private final SudokuBoard b;
-        private final SudokuMetadata m;
+        private final SudokuBoard board;
+        private final SudokuMetadata meta;
 
-        MiniBoardPanel(SudokuBoard b, SudokuMetadata m) {
-            this.b = b;
-            this.m = m;
+        MiniBoardPanel(SudokuBoard board, SudokuMetadata meta) {
+            this.board = board;
+            this.meta = meta;
             setPreferredSize(new Dimension(120, 120));
             setMinimumSize(new Dimension(120, 120));
             setMaximumSize(new Dimension(120, 120));
@@ -46,22 +46,33 @@ public class SudokuPreviewRenderer extends JPanel implements ListCellRenderer<Su
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            Graphics2D g2 = (Graphics2D) g.create();
-            int size = Math.min(getWidth(), getHeight());
-            int cs = size / 9;
-            int ox = (getWidth() - size) / 2;
-            int oy = (getHeight() - size) / 2;
 
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setClip(0, 0, getWidth(), getHeight());
+
+            int w = getWidth();
+            int h = getHeight();
+
+            // prendiamo il lato minore
+            int size = Math.min(w, h);
+            // cell size intero
+            int cs = size / 9;
+            // RICALCOLO: uso solo multiplo di 9 -> niente sbordi
+            size = cs * 9;
+            int ox = (w - size) / 2;
+            int oy = (h - size) / 2;
+
+            // sfondo
             g2.setColor(Color.WHITE);
             g2.fillRect(ox, oy, size, size);
 
             // numeri
             g2.setColor(Color.BLACK);
-            Font old = g2.getFont();
-            g2.setFont(old.deriveFont(Font.BOLD, cs * 0.45f));
+            Font original = g2.getFont();
+            g2.setFont(original.deriveFont(Font.BOLD, cs * 0.45f));
             for (int r = 0; r < 9; r++) {
                 for (int c = 0; c < 9; c++) {
-                    int v = b.getValue(r, c);
+                    int v = board.getValue(r, c);
                     if (v != 0) {
                         String s = String.valueOf(v);
                         FontMetrics fm = g2.getFontMetrics();
@@ -71,15 +82,17 @@ public class SudokuPreviewRenderer extends JPanel implements ListCellRenderer<Su
                     }
                 }
             }
-            g2.setFont(old);
+            g2.setFont(original);
 
-            // griglia
+            // griglia sottile
             g2.setColor(Color.LIGHT_GRAY);
             for (int i = 0; i <= 9; i++) {
                 int p = i * cs;
                 g2.drawLine(ox, oy + p, ox + size, oy + p);
                 g2.drawLine(ox + p, oy, ox + p, oy + size);
             }
+
+            // griglia spessa
             g2.setStroke(new BasicStroke(2));
             g2.setColor(Color.BLACK);
             for (int i = 0; i <= 9; i += 3) {
@@ -89,21 +102,31 @@ public class SudokuPreviewRenderer extends JPanel implements ListCellRenderer<Su
             }
 
             // overlay metadati
-            if (m != null && m.isSolved()) {
-                // pallino verde + best time
-                g2.setColor(new Color(0, 160, 0, 220));
-                int r = 16;
-                g2.fillOval(getWidth() - r - 4, 4, r, r);
-                g2.setColor(Color.WHITE);
-                g2.setFont(g2.getFont().deriveFont(Font.BOLD, 10f));
-                g2.drawString("✔", getWidth() - r - 4 + 4, 4 + 12);
-
-                if (m.getBestTimeMillis() > 0) {
-                    String t = formatMillis(m.getBestTimeMillis());
-                    g2.setColor(new Color(0, 0, 0, 180));
-                    g2.fillRoundRect(4, 4, g2.getFontMetrics().stringWidth(t) + 8, 16, 8, 8);
+            if (meta != null) {
+                // best time a sinistra
+                if (meta.isSolved() && meta.getBestTimeMillis() > 0) {
+                    String t = formatMillis(meta.getBestTimeMillis());
+                    Font f = g2.getFont().deriveFont(Font.BOLD, 10f);
+                    g2.setFont(f);
+                    FontMetrics fm = g2.getFontMetrics();
+                    int bw = fm.stringWidth(t) + 8;
+                    int bh = fm.getHeight();
+                    g2.setColor(new Color(0, 0, 0, 150));
+                    g2.fillRoundRect(ox + 2, oy + 2, bw, bh, 8, 8);
                     g2.setColor(Color.WHITE);
-                    g2.drawString(t, 8, 4 + 12);
+                    g2.drawString(t, ox + 2 + 4, oy + 2 + fm.getAscent());
+                }
+
+                // pallino verde a destra
+                if (meta.isSolved()) {
+                    int r = 16;
+                    int px = ox + size - r - 4;
+                    int py = oy + 4;
+                    g2.setColor(new Color(0, 160, 0, 220));
+                    g2.fillOval(px, py, r, r);
+                    g2.setColor(Color.WHITE);
+                    g2.setFont(g2.getFont().deriveFont(Font.BOLD, 10f));
+                    g2.drawString("✔", px + 4, py + 12);
                 }
             }
 
