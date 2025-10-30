@@ -1,0 +1,34 @@
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3
+                              https://maven.apache.org/xsd/assembly-1.1.3.xsd">
+    <id>dist</id>
+    <formats>
+        <format>zip</format>
+    </formats>
+
+    <!-- non mettere dentro anche le dipendenze perché già hai il fat jar -->
+    <includeBaseDirectory>false</includeBaseDirectory>
+
+    <files>
+        <!-- prendi il JAR shaded -->
+        <file>
+            <source>${project.build.directory}/${project.artifactId}-${project.version}.jar</source>
+            <outputDirectory>/</outputDirectory>
+            <destName>SudokuSolver.jar</destName>
+        </file>
+    </files>
+
+    <fileSets>
+        <!-- prendi la cartella sudokus dalla dir di progetto -->
+        <fileSet>
+            <directory>${basedir}/sudokus</directory>
+            <outputDirectory>/sudokus</outputDirectory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+            <useDefaultExcludes>true</useDefaultExcludes>
+        </fileSet>
+    </fileSets>
+
+</assembly>

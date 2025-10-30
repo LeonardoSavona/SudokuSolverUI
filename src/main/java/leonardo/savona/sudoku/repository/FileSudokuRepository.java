@@ -14,16 +14,39 @@ public class FileSudokuRepository {
     private final File dir;
 
     public FileSudokuRepository() {
+        // cartella "sudokus" accanto al jar / nella working dir
         this(new File("sudokus"));
     }
 
     public FileSudokuRepository(File dir) {
         this.dir = dir;
-        if (!dir.exists()) dir.mkdirs();
+        if (!dir.exists()) {
+            // se non c'è la creo, così il programma non esplode
+            dir.mkdirs();
+        }
     }
 
     public File getDirectory() {
         return dir;
+    }
+
+    public List<File> listFiles() {
+        File[] files = dir.listFiles((d, name) -> name.toLowerCase().endsWith(".txt"));
+        List<File> out = new ArrayList<>();
+        if (files != null) {
+            for (File f : files) {
+                out.add(f);
+            }
+        }
+        return out;
+    }
+
+    public SudokuBoard load(File f) throws IOException {
+        return SudokuIO.loadFromFile(f);
+    }
+
+    public void save(SudokuBoard board, File file) throws IOException {
+        SudokuIO.saveToFile(board, file);
     }
 
     public File getMetadataFile(File sudokuFile) {
@@ -35,10 +58,6 @@ public class FileSudokuRepository {
         return new File(dir, name + ".meta");
     }
 
-    public void save(SudokuBoard board, File file) throws IOException {
-        SudokuIO.saveToFile(board, file);
-    }
-
     public void saveMetadata(File sudokuFile, SudokuMetadata meta) throws IOException {
         File metaFile = getMetadataFile(sudokuFile);
         meta.save(metaFile);
@@ -47,19 +66,6 @@ public class FileSudokuRepository {
     public SudokuMetadata loadMetadata(File sudokuFile) {
         File metaFile = getMetadataFile(sudokuFile);
         return SudokuMetadata.load(metaFile);
-    }
-
-    public List<File> listFiles() {
-        File[] files = dir.listFiles((d, name) -> name.toLowerCase().endsWith(".txt"));
-        List<File> out = new ArrayList<>();
-        if (files != null) {
-            for (File f : files) out.add(f);
-        }
-        return out;
-    }
-
-    public SudokuBoard load(File f) throws IOException {
-        return SudokuIO.loadFromFile(f);
     }
 
     public boolean deleteWithMetadata(File f) {
