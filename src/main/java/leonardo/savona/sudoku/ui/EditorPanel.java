@@ -41,12 +41,12 @@ public class EditorPanel extends JPanel {
 
         setLayout(new BorderLayout());
 
-        // ===== COLONNA SINISTRA: anteprime =====
+        // colonna sinistra
         previewList.setCellRenderer(new SudokuPreviewRenderer());
         previewList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         JScrollPane scroll = new JScrollPane(previewList);
         scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scroll.setPreferredSize(new Dimension(180, 0)); // stessa larghezza del solver
+        scroll.setPreferredSize(new Dimension(180, 0));
         add(scroll, BorderLayout.WEST);
 
         previewList.addListSelectionListener(e -> {
@@ -58,11 +58,10 @@ public class EditorPanel extends JPanel {
             }
         });
 
-        // ===== PARTE DESTRA =====
+        // destra
         JPanel rightPanel = new JPanel(new BorderLayout());
         add(rightPanel, BorderLayout.CENTER);
 
-        // griglia centrata
         this.gridPanel = new SudokuGridPanel(board);
         this.gridPanel.setMode(SudokuGridPanel.Mode.EDITOR);
         this.gridPanel.setOnChange(this::updateValidation);
@@ -71,7 +70,7 @@ public class EditorPanel extends JPanel {
         centerWrapper.add(gridPanel);
         rightPanel.add(centerWrapper, BorderLayout.CENTER);
 
-        // barra comandi in basso (solo destra)
+        // bottom bar
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.LEFT));
         bottom.add(new JLabel("Editor: 1–9, 0/Canc per svuotare"));
 
@@ -104,15 +103,10 @@ public class EditorPanel extends JPanel {
 
         rightPanel.add(bottom, BorderLayout.SOUTH);
 
-        // carica i sudoku esistenti
         reloadTemplates();
         updateValidation();
     }
 
-    /**
-     * Apre un file chooser, carica l'immagine (PNG/JPG), la mostra nel dialogo con overlay,
-     * e poi passa l'immagine allineata all'importer.
-     */
     private void importFromImage() {
         JFileChooser chooser = new JFileChooser();
         int res = chooser.showOpenDialog(this);
@@ -120,69 +114,57 @@ public class EditorPanel extends JPanel {
 
         File imgFile = chooser.getSelectedFile();
         try {
-            // 1. carico l'immagine come BufferedImage
             BufferedImage baseImg = ImageIO.read(imgFile);
             if (baseImg == null) {
-                // probabilmente è un SVG o formato non supportato da ImageIO
-                JOptionPane.showMessageDialog(
-                        this,
+                JOptionPane.showMessageDialog(this,
                         "Formato immagine non supportato (usa PNG o JPG).",
                         "Import immagine",
-                        JOptionPane.WARNING_MESSAGE
-                );
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
-            // 2. apro il dialogo con overlay
             Window owner = SwingUtilities.getWindowAncestor(this);
-            AssistedImportDialog dlg;
-            if (owner instanceof Frame) {
-                dlg = new AssistedImportDialog((Frame) owner, baseImg);
-            } else {
-                dlg = new AssistedImportDialog((Frame) null, baseImg);
-            }
+            AssistedImportDialog dlg = (owner instanceof Frame)
+                    ? new AssistedImportDialog((Frame) owner, baseImg)
+                    : new AssistedImportDialog((Frame) null, baseImg);
             dlg.setVisible(true);
 
             BufferedImage aligned = dlg.getResult();
-            if (aligned == null) {
-                // utente ha annullato
-                return;
-            }
+            if (aligned == null) return;
 
-            // 3. passo al nostro importer "manuale"
             AssistedSudokuImporter importer = new AssistedSudokuImporter();
-            SudokuBoard imported = importer.importSudoku(aligned);
+            AssistedSudokuImporter.RecognizedSudoku rs = importer.importSudokuDetailed(aligned);
 
-            // 4. mostro nell'editor
-            this.board = imported;
-            this.gridPanel.setBoard(imported);
-            this.currentFile = null;           // è nuovo
-            this.deleteBtn.setEnabled(false);  // ancora non esiste su disco
+            this.board = rs.board;
+            this.gridPanel.setBoard(rs.board);
+            this.gridPanel.setLowConfidence(rs.lowConfidence);
+
+            this.currentFile = null;
+            this.deleteBtn.setEnabled(false);
             this.difficultyCombo.setSelectedItem("Medio");
             updateValidation();
 
         } catch (Exception ex) {
             ex.printStackTrace();
-            JOptionPane.showMessageDialog(this,
+            JOptionPane.showMessageDialog(
+                    this,
                     "Errore durante l'import: " + ex.getMessage(),
                     "Errore import immagine",
-                    JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.ERROR_MESSAGE
+            );
         }
     }
 
     private void loadTemplate(SudokuTemplateEntry entry) {
         this.board = entry.board;
         this.gridPanel.setBoard(this.board);
+        this.gridPanel.setLowConfidence(null); // non ci sono incertezze per file già salvati
         this.currentFile = entry.file;
         this.deleteBtn.setEnabled(true);
 
         if (entry.metadata != null) {
             String d = entry.metadata.getDifficulty();
-            if (d != null) {
-                difficultyCombo.setSelectedItem(d);
-            } else {
-                difficultyCombo.setSelectedItem("Medio");
-            }
+            difficultyCombo.setSelectedItem(d != null ? d : "Medio");
         } else {
             difficultyCombo.setSelectedItem("Medio");
         }
@@ -193,6 +175,7 @@ public class EditorPanel extends JPanel {
     private void clearBoard() {
         this.board = new SudokuBoard();
         this.gridPanel.setBoard(this.board);
+        this.gridPanel.setLowConfidence(null);
         this.currentFile = null;
         this.deleteBtn.setEnabled(false);
         this.difficultyCombo.setSelectedItem("Medio");
@@ -212,57 +195,47 @@ public class EditorPanel extends JPanel {
         reloadTemplates();
     }
 
-    /**
-     * Salva il sudoku corrente in base all'hash.
-     * Se stiamo salvando lo stesso file, manteniamo i metadati (solved, bestTime).
-     */
     private void saveTemplate() {
         if (!saveBtn.isEnabled()) return;
 
         String hash = SudokuHash.hash(board);
         File newFile = new File(repo.getDirectory(), hash + ".txt");
 
-        // caso: stesso file
         if (currentFile != null && currentFile.equals(newFile)) {
             try {
                 repo.save(board, newFile);
-
                 SudokuMetadata meta = repo.loadMetadata(newFile);
                 meta.setDifficulty((String) difficultyCombo.getSelectedItem());
                 repo.saveMetadata(newFile, meta);
-
-                JOptionPane.showMessageDialog(this,
-                        "Aggiornato: " + newFile.getName());
+                JOptionPane.showMessageDialog(this, "Aggiornato: " + newFile.getName());
                 reloadTemplates();
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this,
                         "Errore salvataggio: " + ex.getMessage(),
-                        "Errore", JOptionPane.ERROR_MESSAGE);
+                        "Errore",
+                        JOptionPane.ERROR_MESSAGE);
             }
             return;
         }
 
-        // caso: sudoku cambiato → nuovo hash → elimino vecchio
         if (currentFile != null && !currentFile.equals(newFile)) {
             repo.deleteWithMetadata(currentFile);
         }
 
         try {
             repo.save(board, newFile);
-
             SudokuMetadata meta = new SudokuMetadata();
             meta.setDifficulty((String) difficultyCombo.getSelectedItem());
             repo.saveMetadata(newFile, meta);
-
             this.currentFile = newFile;
             this.deleteBtn.setEnabled(true);
-            JOptionPane.showMessageDialog(this,
-                    "Salvato: " + newFile.getName());
+            JOptionPane.showMessageDialog(this, "Salvato: " + newFile.getName());
             reloadTemplates();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this,
                     "Errore salvataggio: " + ex.getMessage(),
-                    "Errore", JOptionPane.ERROR_MESSAGE);
+                    "Errore",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
