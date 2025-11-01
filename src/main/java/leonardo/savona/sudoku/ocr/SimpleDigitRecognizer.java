@@ -22,9 +22,10 @@ public class SimpleDigitRecognizer {
     private static final int PADDING = 4;
 
     // soglie
-    private static final double EMPTY_BLACK_RATIO = 0.003;      // sotto -> vuota
+    private static final double EMPTY_BLACK_RATIO = 0.05;      // sotto -> vuota
     private static final double FORCE_DIGIT_BLACK_RATIO = 0.015; // sopra -> metti qualcosa
     private static final double SCORE_THRESHOLD = 0.55;
+    public static final double AREA_RATIO = 0.005;
 
     // template "fissi"
     private final Map<Integer, List<BufferedImage>> baseTemplates = new HashMap<>();
@@ -64,7 +65,7 @@ public class SimpleDigitRecognizer {
         return img;
     }
 
-    public Result recognizeDetailed(BufferedImage cell) {
+    public Result recognize(BufferedImage cell) {
         // 1) upscala
         BufferedImage up = BinarizationUtils.resize(cell, PREPROCESS_SIZE, PREPROCESS_SIZE);
         // 2) binarizza
@@ -81,7 +82,7 @@ public class SimpleDigitRecognizer {
         }
 
         double areaRatio = (box.width * box.height) / (double) (PREPROCESS_SIZE * PREPROCESS_SIZE);
-        if (areaRatio < 0.005) {
+        if (areaRatio < AREA_RATIO) {
             return Result.empty();
         }
 
@@ -150,10 +151,6 @@ public class SimpleDigitRecognizer {
         if (second != null) r.candidates.add(second);
         if (third != null) r.candidates.add(third);
         return r;
-    }
-
-    public int recognize(BufferedImage cell) {
-        return recognizeDetailed(cell).digit;
     }
 
     public void learn(int digit, BufferedImage normalizedDigit) {

@@ -1,4 +1,6 @@
-package leonardo.savona.sudoku.ocr;
+package leonardo.savona.sudoku.ui;
+
+import leonardo.savona.sudoku.ui.panel.AssistedImagePanel;
 
 import javax.swing.*;
 import java.awt.*;

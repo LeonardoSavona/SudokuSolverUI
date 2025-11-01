@@ -1,6 +1,7 @@
 package leonardo.savona.sudoku.ui;
 
-import leonardo.savona.sudoku.model.SudokuBoard;
+import leonardo.savona.sudoku.ui.panel.EditorPanel;
+import leonardo.savona.sudoku.ui.panel.SolverPanel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,7 +19,7 @@ public class MainFrame extends JFrame {
         setSize(900, 720);
         setLocationRelativeTo(null);
 
-        editorPanel = new EditorPanel(this);
+        editorPanel = new EditorPanel();
         solverPanel = new SolverPanel(this);
 
         centerPanel.add(editorPanel, "EDITOR");
@@ -47,10 +48,5 @@ public class MainFrame extends JFrame {
     public void showSolver() {
         solverPanel.reloadTemplates();
         cardLayout.show(centerPanel, "SOLVER");
-    }
-
-    public void loadBoardIntoSolver(SudokuBoard board) {
-        solverPanel.setBoard(board);
-        showSolver();
     }
 }

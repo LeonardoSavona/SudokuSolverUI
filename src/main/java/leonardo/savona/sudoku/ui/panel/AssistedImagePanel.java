@@ -1,4 +1,4 @@
-package leonardo.savona.sudoku.ocr;
+package leonardo.savona.sudoku.ui.panel;
 
 import javax.swing.*;
 import java.awt.*;

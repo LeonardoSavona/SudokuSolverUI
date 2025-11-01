@@ -19,11 +19,7 @@ public class AssistedSudokuImporter {
 
     private final SimpleDigitRecognizer recognizer = new SimpleDigitRecognizer();
 
-    public SudokuBoard importSudoku(BufferedImage alignedImage) {
-        return importSudokuDetailed(alignedImage).board;
-    }
-
-    public RecognizedSudoku importSudokuDetailed(BufferedImage alignedImage) {
+    public RecognizedSudoku importSudoku(BufferedImage alignedImage) {
         int size = alignedImage.getWidth();
         int cellSize = size / 9;
 
@@ -43,7 +39,7 @@ public class AssistedSudokuImporter {
                 if (y + margin + h > alignedImage.getHeight()) continue;
 
                 BufferedImage cell = alignedImage.getSubimage(x + margin, y + margin, w, h);
-                SimpleDigitRecognizer.Result res = recognizer.recognizeDetailed(cell);
+                SimpleDigitRecognizer.Result res = recognizer.recognize(cell);
                 results[r][c] = res;
 
                 // se molto sicuro → impariamo
