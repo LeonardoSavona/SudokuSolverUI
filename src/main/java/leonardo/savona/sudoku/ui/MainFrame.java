@@ -34,7 +34,7 @@ public class MainFrame extends JFrame {
         add(top, BorderLayout.NORTH);
 
         // pannelli
-        editorPanel = new EditorPanel(this);
+        editorPanel = new EditorPanel();
         solverPanel = new SolverPanel(this);
         solutionPanel = new SolutionPanel();
 
