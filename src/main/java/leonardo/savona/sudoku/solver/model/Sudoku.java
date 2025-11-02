@@ -1,6 +1,6 @@
 package leonardo.savona.sudoku.solver.model;
 
-import leonardo.savona.sudoku.integration.ExternalSudokuConverter;
+import leonardo.savona.sudoku.util.SudokuModelConverter;
 import leonardo.savona.sudoku.solver.model.square.Square;
 import leonardo.savona.sudoku.solver.Helper;
 
@@ -96,7 +96,7 @@ public class Sudoku {
 
     @Override
     public String toString() {
-        return ExternalSudokuConverter.getSudokuAsStandardString(this);
+        return SudokuModelConverter.getSudokuAsStandardString(this);
     }
 
     @Override

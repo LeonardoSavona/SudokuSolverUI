@@ -1,4 +1,4 @@
-package leonardo.savona.sudoku.ui;
+package leonardo.savona.sudoku.ui.panel;
 
 import leonardo.savona.sudoku.model.NoteSet;
 import leonardo.savona.sudoku.model.SudokuBoard;

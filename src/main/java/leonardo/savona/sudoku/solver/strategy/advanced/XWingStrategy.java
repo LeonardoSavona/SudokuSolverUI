@@ -30,8 +30,7 @@ public class XWingStrategy extends Strategy {
                     }
                 }
             } catch (Exception e) {
-                System.out.println("Cell: "+cell);
-                throw new Error(e);
+                throw new RuntimeException(e);
             }
         }
     }
@@ -50,7 +49,7 @@ public class XWingStrategy extends Strategy {
                 Set<Cell> possibleVerticesOnSamecolumn = getPossibleVerticesOnSameColumn(cell1, candidate, !above);
                 possibleVerticesOnSamecolumn.removeIf(cell2 -> cell2.getCoordinate().getRow() != cell.getCoordinate().getRow());
 
-                if (possibleVerticesOnSamecolumn.size() > 0) {
+                if (!possibleVerticesOnSamecolumn.isEmpty()) {
                     vertices.add(c);
                     vertices.add(cell1);
                     vertices.add(possibleVerticesOnSamecolumn.stream().findFirst().get());
@@ -70,7 +69,7 @@ public class XWingStrategy extends Strategy {
     }
 
     private boolean hasPossibleVerticesOnSameColumn(Cell c, int candidate, boolean above) {
-        return getPossibleVerticesOnSameColumn(c, candidate, above).size() > 0;
+        return !getPossibleVerticesOnSameColumn(c, candidate, above).isEmpty();
     }
 
     private Set<Cell> getPossibleVerticesOnSameColumn(Cell cell, int candidate, boolean above) {
@@ -82,7 +81,7 @@ public class XWingStrategy extends Strategy {
     }
 
     private boolean hasPossibleVerticesOnSameRow(Cell cell, int candidate) {
-        return getPossibleVerticesOnSameRow(cell, candidate).size() > 0;
+        return !getPossibleVerticesOnSameRow(cell, candidate).isEmpty();
     }
 
     private Set<Cell> getPossibleVerticesOnSameRow(Cell cell, int candidate) {

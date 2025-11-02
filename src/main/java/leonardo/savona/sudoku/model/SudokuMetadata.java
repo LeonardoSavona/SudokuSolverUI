@@ -1,6 +1,7 @@
 package leonardo.savona.sudoku.model;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.Properties;
 
 public class SudokuMetadata {
@@ -39,7 +40,7 @@ public class SudokuMetadata {
             return m;
         }
         Properties p = new Properties();
-        try (InputStream in = new FileInputStream(metaFile)) {
+        try (InputStream in = Files.newInputStream(metaFile.toPath())) {
             p.load(in);
             m.solved = Boolean.parseBoolean(p.getProperty("solved", "false"));
             m.bestTimeMillis = Long.parseLong(p.getProperty("bestTimeMillis", "0"));
@@ -53,7 +54,7 @@ public class SudokuMetadata {
         p.setProperty("solved", Boolean.toString(solved));
         p.setProperty("bestTimeMillis", Long.toString(bestTimeMillis));
         p.setProperty("difficulty", difficulty != null ? difficulty : "Medio");
-        try (OutputStream out = new FileOutputStream(metaFile)) {
+        try (OutputStream out = Files.newOutputStream(metaFile.toPath())) {
             p.store(out, "Sudoku metadata");
         }
     }

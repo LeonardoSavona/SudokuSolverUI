@@ -1,9 +1,12 @@
-package leonardo.savona.sudoku.ui;
+package leonardo.savona.sudoku.ui.panel;
 
 import leonardo.savona.sudoku.model.SudokuBoard;
 import leonardo.savona.sudoku.model.SudokuMetadata;
 import leonardo.savona.sudoku.model.SudokuUtils;
 import leonardo.savona.sudoku.repository.FileSudokuRepository;
+import leonardo.savona.sudoku.ui.MainFrame;
+import leonardo.savona.sudoku.ui.SudokuPreviewRenderer;
+import leonardo.savona.sudoku.ui.SudokuTemplateEntry;
 
 import javax.swing.*;
 import java.awt.*;

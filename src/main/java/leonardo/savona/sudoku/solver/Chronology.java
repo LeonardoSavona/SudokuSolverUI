@@ -1,6 +1,6 @@
 package leonardo.savona.sudoku.solver;
 
-import leonardo.savona.sudoku.integration.ExternalSudokuConverter;
+import leonardo.savona.sudoku.util.SudokuModelConverter;
 import leonardo.savona.sudoku.solver.model.Cell;
 import leonardo.savona.sudoku.solver.model.Sudoku;
 
@@ -25,8 +25,8 @@ public class Chronology {
     }
 
     private boolean sudokuChanged(Sudoku sudoku) {
-        Sudoku lastIteration = ExternalSudokuConverter.toExternalSudoku(
-                ExternalSudokuConverter.fromMatrix(STEPS.get(STEPS.size()-1))
+        Sudoku lastIteration = SudokuModelConverter.toExternalSudoku(
+                SudokuModelConverter.fromMatrix(STEPS.get(STEPS.size()-1))
         );
         return !sudoku.equals(lastIteration);
     }

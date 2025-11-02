@@ -1,4 +1,4 @@
-package leonardo.savona.sudoku.integration;
+package leonardo.savona.sudoku.util;
 
 import leonardo.savona.sudoku.model.SudokuBoard;
 import leonardo.savona.sudoku.solver.model.Coordinate;
@@ -8,7 +8,7 @@ import leonardo.savona.sudoku.solver.model.Sudoku;
  * Converte tra il modello dell'app (SudokuBoard)
  * e il modello del solver esterno (Sudoku) / matrici int[][]
  */
-public class ExternalSudokuConverter {
+public class SudokuModelConverter {
 
     /**
      * Converte il nostro SudokuBoard in una matrice 9x9 di int.

@@ -1,4 +1,6 @@
-package leonardo.savona.sudoku.ui;
+package leonardo.savona.sudoku;
+
+import leonardo.savona.sudoku.ui.MainFrame;
 
 import javax.swing.SwingUtilities;
 

@@ -1,10 +1,12 @@
-package leonardo.savona.sudoku.ui;
+package leonardo.savona.sudoku.ui.panel;
 
-import leonardo.savona.sudoku.integration.ExternalSolverRunner;
-import leonardo.savona.sudoku.integration.ExternalSudokuConverter;
+import leonardo.savona.sudoku.solver.SudokuSolver;
+import leonardo.savona.sudoku.util.SudokuModelConverter;
 import leonardo.savona.sudoku.model.SudokuBoard;
 import leonardo.savona.sudoku.model.SudokuMetadata;
 import leonardo.savona.sudoku.repository.FileSudokuRepository;
+import leonardo.savona.sudoku.ui.SudokuPreviewRenderer;
+import leonardo.savona.sudoku.ui.SudokuTemplateEntry;
 
 import javax.swing.*;
 import java.awt.*;
@@ -118,7 +120,7 @@ public class SolutionPanel extends JPanel {
     private void onSolve() {
         if (currentEntry == null) return;
         // chiamiamo il runner che usa il modulo esterno
-        List<int[][]> chronology = ExternalSolverRunner.solveAndGetSteps(currentEntry.board);
+        List<int[][]> chronology = SudokuSolver.solveAndGetSteps(currentEntry.board);
         this.steps = chronology;
         if (chronology.isEmpty()) {
             currentStepIndex = -1;
@@ -139,7 +141,7 @@ public class SolutionPanel extends JPanel {
         if (index < 0 || index >= steps.size()) return;
 
         int[][] matrix = steps.get(index);
-        SudokuBoard b = ExternalSudokuConverter.fromMatrix(matrix);
+        SudokuBoard b = SudokuModelConverter.fromMatrix(matrix);
         gridPanel.setBoard(b);
         gridPanel.setInputEnabled(false);
 

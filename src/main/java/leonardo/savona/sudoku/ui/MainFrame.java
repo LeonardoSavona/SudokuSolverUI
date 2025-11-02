@@ -1,5 +1,9 @@
 package leonardo.savona.sudoku.ui;
 
+import leonardo.savona.sudoku.ui.panel.EditorPanel;
+import leonardo.savona.sudoku.ui.panel.SolutionPanel;
+import leonardo.savona.sudoku.ui.panel.SolverPanel;
+
 import javax.swing.*;
 import java.awt.*;
 

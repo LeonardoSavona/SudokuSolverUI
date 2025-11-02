@@ -1,5 +1,6 @@
 package leonardo.savona.sudoku.solver;
 
+import leonardo.savona.sudoku.model.SudokuBoard;
 import leonardo.savona.sudoku.solver.model.Cell;
 import leonardo.savona.sudoku.solver.model.Sudoku;
 import leonardo.savona.sudoku.solver.strategy.SquaresStrategy;
@@ -9,7 +10,9 @@ import leonardo.savona.sudoku.solver.strategy.candidates.HiddenCoupleOfCandidate
 import leonardo.savona.sudoku.solver.strategy.candidates.TrioOfCandidatesStrategy;
 import leonardo.savona.sudoku.solver.strategy.cellbased.BasicStrategy;
 import leonardo.savona.sudoku.solver.strategy.cellbased.PossibleValuesStrategy;
+import leonardo.savona.sudoku.util.SudokuModelConverter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class SudokuSolver {
@@ -24,13 +27,13 @@ public class SudokuSolver {
     private final HiddenCoupleOfCandidatesStrategy hiddenCoupleOfCandidatesStrategy;
     private final XWingStrategy xWingStrategy;
 
-    private Chronology chronology;
+    private final Chronology chronology;
     
-    public SudokuSolver(Sudoku sudoku){
-        // resettiamo gli step precedenti del solver esterno
-        chronology = new Chronology();
-        
+    private SudokuSolver(Sudoku sudoku){
+        this.chronology = new Chronology();
         this.sudoku = sudoku;
+
+        // strategies
         this.basicStrategy = new BasicStrategy(sudoku);
         this.possibleValuesStrategy = new PossibleValuesStrategy(sudoku);
         this.squaresStrategy = new SquaresStrategy(sudoku);
@@ -40,7 +43,34 @@ public class SudokuSolver {
         this.xWingStrategy = new XWingStrategy(sudoku);
     }
 
-    public void solve() {
+    public static List<int[][]> solveAndGetSteps(SudokuBoard board) {
+        try {
+            // convertiamo al modello esterno
+            Sudoku externalSudoku = SudokuModelConverter.toExternalSudoku(board);
+
+            // lanciamo il solver esterno
+            SudokuSolver solver = new SudokuSolver(externalSudoku);
+            solver.solve();
+
+            // recuperiamo tutti i passaggi
+            List<int[][]> matrices = solver.getSteps();
+            if (matrices.isEmpty()) {
+                // in caso di nulla, almeno ritorniamo la board iniziale
+                List<int[][]> single = new ArrayList<>();
+                single.add(SudokuModelConverter.toMatrix(board));
+                return single;
+            }
+            return matrices;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            // in caso di errore, ritorniamo solo lo stato iniziale
+            List<int[][]> single = new ArrayList<>();
+            single.add(SudokuModelConverter.toMatrix(board));
+            return single;
+        }
+    }
+
+    private void solve() {
         int iterations = 0;
         boolean solved = false;
 
@@ -82,7 +112,7 @@ public class SudokuSolver {
         return sudoku.stream().noneMatch(c -> c.getValue() == 0);
     }
 
-    public List<int[][]> getSteps() {
+    private List<int[][]> getSteps() {
         return chronology.getSteps();
     }
 }
