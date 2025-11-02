@@ -1,0 +1,160 @@
+package leonardo.savona.sudoku.ui;
+
+import leonardo.savona.sudoku.integration.ExternalSolverRunner;
+import leonardo.savona.sudoku.integration.ExternalSudokuConverter;
+import leonardo.savona.sudoku.model.SudokuBoard;
+import leonardo.savona.sudoku.model.SudokuMetadata;
+import leonardo.savona.sudoku.repository.FileSudokuRepository;
+
+import javax.swing.*;
+import java.awt.*;
+import java.io.File;
+import java.util.Collections;
+import java.util.List;
+
+public class SolutionPanel extends JPanel {
+
+    private final FileSudokuRepository repo = new FileSudokuRepository();
+
+    private final DefaultListModel<SudokuTemplateEntry> listModel = new DefaultListModel<>();
+    private final JList<SudokuTemplateEntry> previewList = new JList<>(listModel);
+
+    private final SudokuGridPanel gridPanel;
+
+    private final JButton solveBtn;
+    private final JButton prevBtn;
+    private final JButton nextBtn;
+    private final JLabel stepLabel;
+
+    private SudokuTemplateEntry currentEntry;
+    private List<int[][]> steps = Collections.emptyList();
+    private int currentStepIndex = -1;
+
+    public SolutionPanel() {
+        setLayout(new BorderLayout());
+
+        // colonna sinistra (come negli altri panel)
+        previewList.setCellRenderer(new SudokuPreviewRenderer());
+        previewList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JScrollPane scroll = new JScrollPane(previewList);
+        scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setPreferredSize(new Dimension(180, 0));
+        add(scroll, BorderLayout.WEST);
+
+        previewList.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                SudokuTemplateEntry sel = previewList.getSelectedValue();
+                if (sel != null) {
+                    openSudoku(sel);
+                }
+            }
+        });
+
+        // centro
+        JPanel center = new JPanel(new BorderLayout());
+        add(center, BorderLayout.CENTER);
+
+        // top bar: pulsante "Mostra soluzione" e label
+        JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        solveBtn = new JButton("Mostra soluzione");
+        top.add(solveBtn);
+
+        stepLabel = new JLabel("Nessuna soluzione");
+        top.add(Box.createHorizontalStrut(10));
+        top.add(stepLabel);
+
+        center.add(top, BorderLayout.NORTH);
+
+        // griglia
+        gridPanel = new SudokuGridPanel(new SudokuBoard());
+        gridPanel.setMode(SudokuGridPanel.Mode.SOLVER);
+        gridPanel.setInputEnabled(false);
+        JPanel gridWrap = new JPanel(new GridBagLayout());
+        gridWrap.add(gridPanel);
+        center.add(gridWrap, BorderLayout.CENTER);
+
+        // bottom: navigazione step
+        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        prevBtn = new JButton("← Precedente");
+        nextBtn = new JButton("Successivo →");
+        prevBtn.setEnabled(false);
+        nextBtn.setEnabled(false);
+        bottom.add(prevBtn);
+        bottom.add(nextBtn);
+        center.add(bottom, BorderLayout.SOUTH);
+
+        // azioni
+        solveBtn.addActionListener(e -> onSolve());
+        prevBtn.addActionListener(e -> showStep(currentStepIndex - 1));
+        nextBtn.addActionListener(e -> showStep(currentStepIndex + 1));
+
+        // carica la lista
+        reloadTemplates();
+    }
+
+    public void reloadTemplates() {
+        listModel.clear();
+        for (File f : repo.listFiles()) {
+            try {
+                SudokuBoard b = repo.load(f);
+                SudokuMetadata m = repo.loadMetadata(f);
+                listModel.addElement(new SudokuTemplateEntry(f, b, m));
+            } catch (Exception ignored) {}
+        }
+    }
+
+    private void openSudoku(SudokuTemplateEntry entry) {
+        this.currentEntry = entry;
+        // mostriamo il sudoku com'è (input disabilitato)
+        this.gridPanel.setBoard(entry.board);
+        this.gridPanel.setInputEnabled(false);
+        this.steps = Collections.emptyList();
+        this.currentStepIndex = -1;
+        updateStepLabel();
+        prevBtn.setEnabled(false);
+        nextBtn.setEnabled(false);
+    }
+
+    private void onSolve() {
+        if (currentEntry == null) return;
+        // chiamiamo il runner che usa il modulo esterno
+        List<int[][]> chronology = ExternalSolverRunner.solveAndGetSteps(currentEntry.board);
+        this.steps = chronology;
+        if (chronology.isEmpty()) {
+            currentStepIndex = -1;
+            gridPanel.setBoard(currentEntry.board);
+            stepLabel.setText("Nessuna soluzione trovata");
+            prevBtn.setEnabled(false);
+            nextBtn.setEnabled(false);
+        } else {
+            // mostriamo il primo step
+            showStep(0);
+            prevBtn.setEnabled(true);
+            nextBtn.setEnabled(chronology.size() > 1);
+        }
+    }
+
+    private void showStep(int index) {
+        if (steps == null || steps.isEmpty()) return;
+        if (index < 0 || index >= steps.size()) return;
+
+        int[][] matrix = steps.get(index);
+        SudokuBoard b = ExternalSudokuConverter.fromMatrix(matrix);
+        gridPanel.setBoard(b);
+        gridPanel.setInputEnabled(false);
+
+        currentStepIndex = index;
+        updateStepLabel();
+
+        prevBtn.setEnabled(index > 0);
+        nextBtn.setEnabled(index < steps.size() - 1);
+    }
+
+    private void updateStepLabel() {
+        if (steps == null || steps.isEmpty() || currentStepIndex < 0) {
+            stepLabel.setText("Nessuna soluzione");
+        } else {
+            stepLabel.setText("Passo " + (currentStepIndex + 1) + " / " + steps.size());
+        }
+    }
+}

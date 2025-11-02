@@ -1,56 +1,60 @@
 package leonardo.savona.sudoku.ui;
 
-import leonardo.savona.sudoku.model.SudokuBoard;
-
 import javax.swing.*;
 import java.awt.*;
 
 public class MainFrame extends JFrame {
 
     private final CardLayout cardLayout = new CardLayout();
-    private final JPanel centerPanel = new JPanel(cardLayout);
+    private final JPanel cardPanel = new JPanel(cardLayout);
+
     private final EditorPanel editorPanel;
     private final SolverPanel solverPanel;
+    private final SolutionPanel solutionPanel;
 
     public MainFrame() {
-        super("Sudoku Solver");
+        super("Sudoku");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(900, 720);
-        setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
 
+        // top bar
+        JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton editBtn = new JButton("Crea sudoku");
+        JButton solveBtn = new JButton("Risolvi sudoku");
+        JButton solPanelBtn = new JButton("Soluzioni");
+
+        top.add(editBtn);
+        top.add(solveBtn);
+        top.add(solPanelBtn);
+
+        add(top, BorderLayout.NORTH);
+
+        // pannelli
         editorPanel = new EditorPanel(this);
         solverPanel = new SolverPanel(this);
+        solutionPanel = new SolutionPanel();
 
-        centerPanel.add(editorPanel, "EDITOR");
-        centerPanel.add(solverPanel, "SOLVER");
+        cardPanel.add(editorPanel, "editor");
+        cardPanel.add(solverPanel, "solver");
+        cardPanel.add(solutionPanel, "solutions");
 
-        JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton editorBtn = new JButton("Crea sudoku");
-        JButton solverBtn = new JButton("Risolvi sudoku");
-        editorBtn.addActionListener(e -> showEditor());
-        solverBtn.addActionListener(e -> showSolver());
-        topBar.add(editorBtn);
-        topBar.add(solverBtn);
+        add(cardPanel, BorderLayout.CENTER);
 
-        getContentPane().setLayout(new BorderLayout());
-        getContentPane().add(topBar, BorderLayout.NORTH);
-        getContentPane().add(centerPanel, BorderLayout.CENTER);
+        // azioni
+        editBtn.addActionListener(e -> {
+            editorPanel.reloadTemplates();
+            cardLayout.show(cardPanel, "editor");
+        });
+        solveBtn.addActionListener(e -> {
+            solverPanel.reloadTemplates();
+            cardLayout.show(cardPanel, "solver");
+        });
+        solPanelBtn.addActionListener(e -> {
+            solutionPanel.reloadTemplates();
+            cardLayout.show(cardPanel, "solutions");
+        });
 
-        showEditor();
-    }
-
-    public void showEditor() {
-        editorPanel.reloadTemplates();
-        cardLayout.show(centerPanel, "EDITOR");
-    }
-
-    public void showSolver() {
-        solverPanel.reloadTemplates();
-        cardLayout.show(centerPanel, "SOLVER");
-    }
-
-    public void loadBoardIntoSolver(SudokuBoard board) {
-        solverPanel.setBoard(board);
-        showSolver();
+        setSize(1200, 800);
+        setLocationRelativeTo(null);
     }
 }

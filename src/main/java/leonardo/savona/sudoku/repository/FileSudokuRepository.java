@@ -7,6 +7,7 @@ import leonardo.savona.sudoku.model.SudokuMetadata;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class FileSudokuRepository {
@@ -34,9 +35,7 @@ public class FileSudokuRepository {
         File[] files = dir.listFiles((d, name) -> name.toLowerCase().endsWith(".txt"));
         List<File> out = new ArrayList<>();
         if (files != null) {
-            for (File f : files) {
-                out.add(f);
-            }
+            Collections.addAll(out, files);
         }
         return out;
     }
