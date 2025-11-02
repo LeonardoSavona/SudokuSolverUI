@@ -3,26 +3,31 @@ package leonardo.savona.sudoku.ui.panel;
 import leonardo.savona.sudoku.model.SudokuBoard;
 import leonardo.savona.sudoku.model.SudokuMetadata;
 import leonardo.savona.sudoku.model.SudokuUtils;
+import leonardo.savona.sudoku.ui.AssistedImportDialog;
+import leonardo.savona.sudoku.ocr.AssistedSudokuImporter;
 import leonardo.savona.sudoku.repository.FileSudokuRepository;
-import leonardo.savona.sudoku.ui.MainFrame;
+import leonardo.savona.sudoku.ui.LoadingDialog;
 import leonardo.savona.sudoku.ui.SudokuPreviewRenderer;
 import leonardo.savona.sudoku.ui.SudokuTemplateEntry;
 import leonardo.savona.sudoku.util.SudokuHash;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 public class EditorPanel extends JPanel {
 
-    private final MainFrame parent;
     private SudokuBoard board;
     private final SudokuGridPanel gridPanel;
+
     private final JButton saveBtn;
     private final JButton clearBtn;
     private final JButton deleteBtn;
+    private final JButton importBtn;
     private final JLabel statusLabel;
     private final JComboBox<String> difficultyCombo;
 
@@ -32,18 +37,17 @@ public class EditorPanel extends JPanel {
 
     private File currentFile = null;
 
-    public EditorPanel(MainFrame parent) {
-        this.parent = parent;
+    public EditorPanel() {
         this.board = new SudokuBoard();
 
         setLayout(new BorderLayout());
 
-        // ===== COLONNA SINISTRA: anteprime =====
+        // colonna sinistra
         previewList.setCellRenderer(new SudokuPreviewRenderer());
         previewList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         JScrollPane scroll = new JScrollPane(previewList);
         scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scroll.setPreferredSize(new Dimension(180, 0)); // stessa larghezza del solver
+        scroll.setPreferredSize(new Dimension(180, 0));
         add(scroll, BorderLayout.WEST);
 
         previewList.addListSelectionListener(e -> {
@@ -55,12 +59,10 @@ public class EditorPanel extends JPanel {
             }
         });
 
-        // ===== PARTE DESTRA: griglia + barra comandi =====
-        // pannello destro che contiene (CENTER=griglia, SOUTH=pulsanti)
+        // destra
         JPanel rightPanel = new JPanel(new BorderLayout());
         add(rightPanel, BorderLayout.CENTER);
 
-        // griglia al centro, centrata
         this.gridPanel = new SudokuGridPanel(board);
         this.gridPanel.setMode(SudokuGridPanel.Mode.EDITOR);
         this.gridPanel.setOnChange(this::updateValidation);
@@ -69,7 +71,7 @@ public class EditorPanel extends JPanel {
         centerWrapper.add(gridPanel);
         rightPanel.add(centerWrapper, BorderLayout.CENTER);
 
-        // barra comandi in basso (solo nella parte destra)
+        // bottom bar
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.LEFT));
         bottom.add(new JLabel("Editor: 1–9, 0/Canc per svuotare"));
 
@@ -83,11 +85,15 @@ public class EditorPanel extends JPanel {
         bottom.add(Box.createHorizontalStrut(10));
         bottom.add(saveBtn);
 
-        clearBtn = new JButton("Pulisci sudoku");
+        clearBtn = new JButton("Pulisci");
         clearBtn.addActionListener(e -> clearBoard());
         bottom.add(clearBtn);
 
-        deleteBtn = new JButton("Elimina sudoku");
+        importBtn = new JButton("Importa da immagine…");
+        importBtn.addActionListener(e -> importFromImage());
+        bottom.add(importBtn);
+
+        deleteBtn = new JButton("Elimina");
         deleteBtn.addActionListener(e -> deleteCurrent());
         deleteBtn.setEnabled(false);
         bottom.add(deleteBtn);
@@ -98,21 +104,108 @@ public class EditorPanel extends JPanel {
 
         rightPanel.add(bottom, BorderLayout.SOUTH);
 
-        // carico subito i template
         reloadTemplates();
         updateValidation();
+    }
+
+    /**
+     * Importa un sudoku da immagine con editor + OCR.
+     * Durante l'OCR mostra un dialog modale di "elaborazione".
+     */
+    private void importFromImage() {
+        JFileChooser chooser = new JFileChooser();
+        int res = chooser.showOpenDialog(this);
+        if (res != JFileChooser.APPROVE_OPTION) return;
+
+        File imgFile = chooser.getSelectedFile();
+        try {
+            BufferedImage baseImg = ImageIO.read(imgFile);
+            if (baseImg == null) {
+                JOptionPane.showMessageDialog(this,
+                        "Formato immagine non supportato (usa PNG o JPG).",
+                        "Import immagine",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // editor di allineamento
+            Window owner = SwingUtilities.getWindowAncestor(this);
+            AssistedImportDialog dlg = (owner instanceof Frame)
+                    ? new AssistedImportDialog((Frame) owner, baseImg)
+                    : new AssistedImportDialog((Frame) null, baseImg);
+            dlg.setVisible(true);
+
+            // immagine allineata (900x900 o quella che abbiamo deciso)
+            BufferedImage aligned = dlg.getResult();
+            if (aligned == null) {
+                // utente ha annullato
+                return;
+            }
+
+            // QUI parte l'elaborazione "pesante"
+            // mostriamo un dialog modale "elaborazione..."
+            LoadingDialog loading = new LoadingDialog(owner, "Elaborazione sudoku in corso...");
+            // lo mostriamo in un altro thread EDT-safe
+            SwingUtilities.invokeLater(() -> loading.setVisible(true));
+
+            // facciamo l'OCR in background
+            SwingWorker<AssistedSudokuImporter.RecognizedSudoku, Void> worker =
+                    new SwingWorker<AssistedSudokuImporter.RecognizedSudoku, Void>() {
+                        @Override
+                        protected AssistedSudokuImporter.RecognizedSudoku doInBackground() throws Exception {
+                            AssistedSudokuImporter importer = new AssistedSudokuImporter();
+                            // OCR + sudoku-aware
+                            return importer.importSudoku(aligned);
+                        }
+
+                        @Override
+                        protected void done() {
+                            try {
+                                AssistedSudokuImporter.RecognizedSudoku rs = get();
+                                board = rs.board;
+                                gridPanel.setBoard(rs.board);
+                                gridPanel.setLowConfidence(rs.lowConfidence);
+
+                                currentFile = null;
+                                deleteBtn.setEnabled(false);
+                                difficultyCombo.setSelectedItem("Medio");
+                                updateValidation();
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                                JOptionPane.showMessageDialog(
+                                        EditorPanel.this,
+                                        "Errore durante l'analisi dell'immagine:\n" + ex.getMessage(),
+                                        "Errore import",
+                                        JOptionPane.ERROR_MESSAGE
+                                );
+                            } finally {
+                                loading.dispose();
+                            }
+                        }
+                    };
+            worker.execute();
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Errore durante l'import: " + ex.getMessage(),
+                    "Errore import immagine",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
     }
 
     private void loadTemplate(SudokuTemplateEntry entry) {
         this.board = entry.board;
         this.gridPanel.setBoard(this.board);
+        this.gridPanel.setLowConfidence(null); // nessuna incertezza da file
         this.currentFile = entry.file;
         this.deleteBtn.setEnabled(true);
 
-        // carichiamo la difficoltà dai metadati, se c'è
         if (entry.metadata != null) {
             String d = entry.metadata.getDifficulty();
-            if (d != null) difficultyCombo.setSelectedItem(d);
+            difficultyCombo.setSelectedItem(d != null ? d : "Medio");
         } else {
             difficultyCombo.setSelectedItem("Medio");
         }
@@ -123,6 +216,7 @@ public class EditorPanel extends JPanel {
     private void clearBoard() {
         this.board = new SudokuBoard();
         this.gridPanel.setBoard(this.board);
+        this.gridPanel.setLowConfidence(null);
         this.currentFile = null;
         this.deleteBtn.setEnabled(false);
         this.difficultyCombo.setSelectedItem("Medio");
@@ -142,34 +236,29 @@ public class EditorPanel extends JPanel {
         reloadTemplates();
     }
 
-    // >>> versione corretta che non azzera metadati esistenti <<<
     private void saveTemplate() {
         if (!saveBtn.isEnabled()) return;
 
-        // calcolo hash attuale
         String hash = SudokuHash.hash(board);
         File newFile = new File(repo.getDirectory(), hash + ".txt");
 
-        // caso 1: sto salvando LO STESSO sudoku (stesso file)
         if (currentFile != null && currentFile.equals(newFile)) {
             try {
                 repo.save(board, newFile);
-
-                // carico metadati esistenti e aggiorno solo la difficoltà
                 SudokuMetadata meta = repo.loadMetadata(newFile);
                 meta.setDifficulty((String) difficultyCombo.getSelectedItem());
                 repo.saveMetadata(newFile, meta);
-
                 JOptionPane.showMessageDialog(this, "Aggiornato: " + newFile.getName());
                 reloadTemplates();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Errore salvataggio: " + ex.getMessage(),
-                        "Errore", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        "Errore salvataggio: " + ex.getMessage(),
+                        "Errore",
+                        JOptionPane.ERROR_MESSAGE);
             }
             return;
         }
 
-        // caso 2: sudoku nuovo (hash diverso)
         if (currentFile != null && !currentFile.equals(newFile)) {
             repo.deleteWithMetadata(currentFile);
         }
@@ -179,14 +268,15 @@ public class EditorPanel extends JPanel {
             SudokuMetadata meta = new SudokuMetadata();
             meta.setDifficulty((String) difficultyCombo.getSelectedItem());
             repo.saveMetadata(newFile, meta);
-
             this.currentFile = newFile;
             this.deleteBtn.setEnabled(true);
             JOptionPane.showMessageDialog(this, "Salvato: " + newFile.getName());
             reloadTemplates();
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Errore salvataggio: " + ex.getMessage(),
-                    "Errore", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    "Errore salvataggio: " + ex.getMessage(),
+                    "Errore",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 

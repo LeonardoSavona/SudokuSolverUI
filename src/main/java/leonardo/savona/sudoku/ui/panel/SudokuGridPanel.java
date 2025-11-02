@@ -21,6 +21,9 @@ public class SudokuGridPanel extends JPanel {
     private Mode mode = Mode.SOLVER;
     private Runnable onChange = null;
 
+    // 👇 nuovo: celle OCR a bassa confidenza
+    private boolean[][] lowConfidence = new boolean[9][9];
+
     public SudokuGridPanel(SudokuBoard board) {
         this.board = board;
         setFocusable(true);
@@ -120,6 +123,8 @@ public class SudokuGridPanel extends JPanel {
         this.board = board;
         this.selectedRow = 0;
         this.selectedCol = 0;
+        // quando cambio board azzero anche le lowConfidence
+        this.lowConfidence = new boolean[9][9];
         repaint();
     }
 
@@ -129,6 +134,16 @@ public class SudokuGridPanel extends JPanel {
     }
 
     public boolean isNoteMode() { return noteMode; }
+
+    // 👇 nuovo: arriva dall'EditorPanel dopo l'import da immagine
+    public void setLowConfidence(boolean[][] marks) {
+        if (marks != null && marks.length == 9 && marks[0].length == 9) {
+            this.lowConfidence = marks;
+        } else {
+            this.lowConfidence = new boolean[9][9];
+        }
+        repaint();
+    }
 
     public void applyNumber(int number) {
         if (!inputEnabled) return;           // 👈 blocco inserimenti se disattivato
@@ -199,6 +214,12 @@ public class SudokuGridPanel extends JPanel {
 
                 g2.setColor(bg);
                 g2.fillRect(x, y, cellSize, cellSize);
+
+                // 👇 nuovo: overlay giallo per celle a bassa confidenza (prima dei conflitti)
+                if (lowConfidence[r][c]) {
+                    g2.setColor(new Color(255, 255, 170, 140));
+                    g2.fillRect(x, y, cellSize, cellSize);
+                }
 
                 // conflitto
                 if (board.isCellInConflict(r, c)) {

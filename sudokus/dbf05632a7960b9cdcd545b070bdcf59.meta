@@ -1,5 +1,5 @@
 #Sudoku metadata
-#Thu Oct 30 22:55:23 CET 2025
+#Fri Oct 31 22:02:59 CET 2025
 difficulty=Medio
-solved=false
-bestTimeMillis=0
+solved=true
+bestTimeMillis=771301
