@@ -1,7 +1,7 @@
 package leonardo.savona.sudoku.solver.strategy.cellbased;
 
-import leonardo.savona.sudoku.solver.model.Cell;
-import leonardo.savona.sudoku.solver.model.Sudoku;
+import leonardo.savona.sudoku.model.Cell;
+import leonardo.savona.sudoku.model.Sudoku;
 import leonardo.savona.sudoku.solver.strategy.Strategy;
 
 public abstract class CellBasedStrategy extends Strategy {

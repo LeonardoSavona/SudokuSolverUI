@@ -1,10 +1,10 @@
 package leonardo.savona.sudoku.solver.strategy;
 
-import leonardo.savona.sudoku.solver.model.Sudoku;
-import leonardo.savona.sudoku.solver.model.square.Square;
-import leonardo.savona.sudoku.solver.model.square.SquareColumn;
-import leonardo.savona.sudoku.solver.model.square.SquareRow;
-import leonardo.savona.sudoku.solver.Helper;
+import leonardo.savona.sudoku.model.Sudoku;
+import leonardo.savona.sudoku.model.square.Square;
+import leonardo.savona.sudoku.model.square.SquareColumn;
+import leonardo.savona.sudoku.model.square.SquareRow;
+import leonardo.savona.sudoku.util.SudokuUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -41,7 +41,7 @@ public class SquaresStrategy extends Strategy {
 
                                 c.removePossibleValue(n);
                                 if (c.isNumberFound()) {
-                                    Helper.clearOtherCellsPossibleValues(c, sudoku);
+                                    SudokuUtils.clearOtherCellsPossibleValues(c, sudoku);
                                 }
                             }
                         });
@@ -69,7 +69,7 @@ public class SquaresStrategy extends Strategy {
 
                                 c.removePossibleValue(n);
                                 if (c.isNumberFound()) {
-                                    Helper.clearOtherCellsPossibleValues(c, sudoku);
+                                    SudokuUtils.clearOtherCellsPossibleValues(c, sudoku);
                                 }
                             }
                         });

@@ -1,15 +1,15 @@
 package leonardo.savona.sudoku.ui.panel;
 
-import leonardo.savona.sudoku.model.SudokuBoard;
+import leonardo.savona.sudoku.model.Sudoku;
 import leonardo.savona.sudoku.model.SudokuMetadata;
-import leonardo.savona.sudoku.model.SudokuUtils;
-import leonardo.savona.sudoku.ui.AssistedImportDialog;
 import leonardo.savona.sudoku.ocr.AssistedSudokuImporter;
 import leonardo.savona.sudoku.repository.FileSudokuRepository;
+import leonardo.savona.sudoku.ui.AssistedImportDialog;
 import leonardo.savona.sudoku.ui.LoadingDialog;
 import leonardo.savona.sudoku.ui.SudokuPreviewRenderer;
 import leonardo.savona.sudoku.ui.SudokuTemplateEntry;
 import leonardo.savona.sudoku.util.SudokuHash;
+import leonardo.savona.sudoku.util.SudokuUtils;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -21,7 +21,7 @@ import java.util.List;
 
 public class EditorPanel extends JPanel {
 
-    private SudokuBoard board;
+    private Sudoku board;
     private final SudokuGridPanel gridPanel;
 
     private final JButton saveBtn;
@@ -38,7 +38,7 @@ public class EditorPanel extends JPanel {
     private File currentFile = null;
 
     public EditorPanel() {
-        this.board = new SudokuBoard();
+        this.board = new Sudoku();
 
         setLayout(new BorderLayout());
 
@@ -214,7 +214,7 @@ public class EditorPanel extends JPanel {
     }
 
     private void clearBoard() {
-        this.board = new SudokuBoard();
+        this.board = new Sudoku();
         this.gridPanel.setBoard(this.board);
         this.gridPanel.setLowConfidence(null);
         this.currentFile = null;
@@ -295,7 +295,7 @@ public class EditorPanel extends JPanel {
         List<SudokuTemplateEntry> entries = new ArrayList<>();
         for (File f : files) {
             try {
-                SudokuBoard b = repo.load(f);
+                Sudoku b = repo.load(f);
                 SudokuMetadata m = repo.loadMetadata(f);
                 entries.add(new SudokuTemplateEntry(f, b, m));
             } catch (Exception ignored) {}

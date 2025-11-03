@@ -1,55 +1,13 @@
 package leonardo.savona.sudoku.util;
 
-import leonardo.savona.sudoku.model.SudokuBoard;
-import leonardo.savona.sudoku.solver.model.Cell;
-import leonardo.savona.sudoku.solver.model.Coordinate;
-import leonardo.savona.sudoku.solver.model.Sudoku;
+import leonardo.savona.sudoku.model.Cell;
+import leonardo.savona.sudoku.model.Coordinate;
+import leonardo.savona.sudoku.model.Sudoku;
 
 /**
- * Converte tra il modello dell'app (SudokuBoard)
- * e il modello del solver esterno (Sudoku) / matrici int[][]
+ * Conversion utilities between the Sudoku model and matrix/string representations.
  */
 public class SudokuModelConverter {
-
-    /**
-     * Converte il nostro SudokuBoard in una matrice 9x9 di int.
-     */
-    public static int[][] toMatrix(SudokuBoard board) {
-        int[][] m = new int[9][9];
-        for (int r = 0; r < 9; r++) {
-            for (int c = 0; c < 9; c++) {
-                m[r][c] = board.getValue(r, c);
-            }
-        }
-        return m;
-    }
-
-    /**
-     * Converte una matrice 9x9 in un SudokuBoard della tua app.
-     */
-    public static SudokuBoard fromMatrix(int[][] m) {
-        SudokuBoard b = new SudokuBoard();
-        for (int r = 0; r < 9; r++) {
-            for (int c = 0; c < 9; c++) {
-                int v = m[r][c];
-                if (v != 0) {
-                    // in "soluzioni" lo consideriamo non fisso
-                    b.setValue(r, c, v, false);
-                }
-            }
-        }
-        return b;
-    }
-
-    /**
-     * Converte il nostro SudokuBoard nel Sudoku del modulo esterno.
-     * ATTENZIONE: richiede che nel modulo esterno tu aggiunga
-     * il costruttore `public Sudoku(int[][] values)`.
-     */
-    public static Sudoku toExternalSudoku(SudokuBoard board) {
-        int[][] m = toMatrix(board);
-        return new Sudoku(m);
-    }
 
     public static int[][] toMatrix(Sudoku sudoku) {
         int size = sudoku.getSize();
@@ -60,6 +18,19 @@ public class SudokuModelConverter {
             matrix[row][col] = cell.getValue();
         }
         return matrix;
+    }
+
+    public static Sudoku fromMatrix(int[][] matrix) {
+        Sudoku sudoku = new Sudoku(matrix.length);
+        for (int r = 0; r < matrix.length; r++) {
+            for (int c = 0; c < matrix[r].length; c++) {
+                int value = matrix[r][c];
+                if (value != 0) {
+                    sudoku.setValue(r, c, value, false);
+                }
+            }
+        }
+        return sudoku;
     }
 
     public static String getSudokuAsStandardString(Sudoku sudoku) {

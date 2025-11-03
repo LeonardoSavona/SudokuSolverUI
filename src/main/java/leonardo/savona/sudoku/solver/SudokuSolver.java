@@ -1,8 +1,7 @@
 package leonardo.savona.sudoku.solver;
 
-import leonardo.savona.sudoku.model.SudokuBoard;
-import leonardo.savona.sudoku.solver.model.Cell;
-import leonardo.savona.sudoku.solver.model.Sudoku;
+import leonardo.savona.sudoku.model.Cell;
+import leonardo.savona.sudoku.model.Sudoku;
 import leonardo.savona.sudoku.solver.strategy.SquaresStrategy;
 import leonardo.savona.sudoku.solver.strategy.Strategy;
 import leonardo.savona.sudoku.solver.strategy.advanced.XWingStrategy;
@@ -45,19 +44,14 @@ public class SudokuSolver {
         this.xWingStrategy = new XWingStrategy(sudoku);
     }
 
-    public static List<SolverStep> solveAndGetSteps(SudokuBoard board) {
+    public static List<SolverStep> solveAndGetSteps(Sudoku board) {
         try {
-            // convertiamo al modello esterno
-            Sudoku externalSudoku = SudokuModelConverter.toExternalSudoku(board);
-
-            // lanciamo il solver esterno
-            SudokuSolver solver = new SudokuSolver(externalSudoku);
+            Sudoku workingSudoku = board.copy();
+            SudokuSolver solver = new SudokuSolver(workingSudoku);
             solver.solve();
 
-            // recuperiamo tutti i passaggi
             List<SolverStep> steps = solver.getSteps();
             if (steps.isEmpty()) {
-                // in caso di nulla, almeno ritorniamo la board iniziale
                 List<SolverStep> single = new ArrayList<>();
                 single.add(SolverStep.ofMatrix(
                         SudokuModelConverter.toMatrix(board),
@@ -69,9 +63,8 @@ public class SudokuSolver {
                 return single;
             }
             return steps;
-        } catch (Exception ex) {
+        } catch (RuntimeException ex) {
             ex.printStackTrace();
-            // in caso di errore, ritorniamo solo lo stato iniziale
             List<SolverStep> single = new ArrayList<>();
             single.add(SolverStep.ofMatrix(
                     SudokuModelConverter.toMatrix(board),

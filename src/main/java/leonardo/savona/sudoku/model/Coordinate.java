@@ -1,4 +1,4 @@
-package leonardo.savona.sudoku.solver.model;
+package leonardo.savona.sudoku.model;
 
 import java.util.Objects;
 

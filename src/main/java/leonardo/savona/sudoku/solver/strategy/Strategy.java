@@ -1,6 +1,6 @@
 package leonardo.savona.sudoku.solver.strategy;
 
-import leonardo.savona.sudoku.solver.model.Sudoku;
+import leonardo.savona.sudoku.model.Sudoku;
 
 public abstract class Strategy {
 

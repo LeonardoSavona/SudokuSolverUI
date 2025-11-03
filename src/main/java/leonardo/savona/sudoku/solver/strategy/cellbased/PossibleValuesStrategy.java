@@ -1,9 +1,9 @@
 package leonardo.savona.sudoku.solver.strategy.cellbased;
 
-import leonardo.savona.sudoku.solver.model.Cell;
-import leonardo.savona.sudoku.solver.model.Sudoku;
-import leonardo.savona.sudoku.solver.model.square.Square;
-import leonardo.savona.sudoku.solver.Helper;
+import leonardo.savona.sudoku.model.Cell;
+import leonardo.savona.sudoku.model.Sudoku;
+import leonardo.savona.sudoku.model.square.Square;
+import leonardo.savona.sudoku.util.SudokuUtils;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -24,7 +24,7 @@ public class PossibleValuesStrategy extends CellBasedStrategy {
                 cell.clearPossibleValues();
                 cell.addPossibleValue(possibleValue);
                 if (cell.isNumberFound()) {
-                    Helper.clearOtherCellsPossibleValues(cell, sudoku);
+                    SudokuUtils.clearOtherCellsPossibleValues(cell, sudoku);
                 }
                 break;
             }
@@ -32,7 +32,7 @@ public class PossibleValuesStrategy extends CellBasedStrategy {
     }
 
     private boolean isPresentInOtherSquaresPossibleValues(Cell cell, int possibleValue) {
-        Square square = Helper.getSquareFromCell(sudoku, cell);
+        Square square = SudokuUtils.getSquareFromCell(sudoku, cell);
         return isPresentInCellsPossibleValues(square.getCells().stream()
                         .filter(c -> !c.equals(cell)).collect(Collectors.toSet()),
                 possibleValue);

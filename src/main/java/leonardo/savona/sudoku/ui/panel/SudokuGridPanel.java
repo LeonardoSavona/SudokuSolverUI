@@ -1,7 +1,7 @@
 package leonardo.savona.sudoku.ui.panel;
 
 import leonardo.savona.sudoku.model.NoteSet;
-import leonardo.savona.sudoku.model.SudokuBoard;
+import leonardo.savona.sudoku.model.Sudoku;
 
 import javax.swing.*;
 import java.awt.*;
@@ -12,7 +12,7 @@ public class SudokuGridPanel extends JPanel {
     public enum Mode { EDITOR, SOLVER }
 
     private static final int GRID_PIXELS = 540;
-    private SudokuBoard board;
+    private Sudoku board;
 
     private int selectedRow = 0;
     private int selectedCol = 0;
@@ -23,7 +23,7 @@ public class SudokuGridPanel extends JPanel {
     private Runnable onChange = null;
 
     // 👇 nuovo: celle OCR a bassa confidenza
-    private boolean[][] lowConfidence = new boolean[9][9];
+    private boolean[][] lowConfidence = new boolean[Sudoku.DEFAULT_SIZE][Sudoku.DEFAULT_SIZE];
     private Highlight highlight = null;
 
     public static class Highlight {
@@ -44,7 +44,7 @@ public class SudokuGridPanel extends JPanel {
         }
     }
 
-    public SudokuGridPanel(SudokuBoard board) {
+    public SudokuGridPanel(Sudoku board) {
         this.board = board;
         setFocusable(true);
         setBackground(Color.WHITE);
@@ -161,12 +161,12 @@ public class SudokuGridPanel extends JPanel {
         repaint();
     }
 
-    public void setBoard(SudokuBoard board) {
+    public void setBoard(Sudoku board) {
         this.board = board;
         this.selectedRow = 0;
         this.selectedCol = 0;
         // quando cambio board azzero anche le lowConfidence
-        this.lowConfidence = new boolean[9][9];
+        this.lowConfidence = new boolean[Sudoku.DEFAULT_SIZE][Sudoku.DEFAULT_SIZE];
         this.highlight = null;
         repaint();
     }
@@ -180,10 +180,10 @@ public class SudokuGridPanel extends JPanel {
 
     // 👇 nuovo: arriva dall'EditorPanel dopo l'import da immagine
     public void setLowConfidence(boolean[][] marks) {
-        if (marks != null && marks.length == 9 && marks[0].length == 9) {
+        if (marks != null && marks.length == Sudoku.DEFAULT_SIZE && marks[0].length == Sudoku.DEFAULT_SIZE) {
             this.lowConfidence = marks;
         } else {
-            this.lowConfidence = new boolean[9][9];
+            this.lowConfidence = new boolean[Sudoku.DEFAULT_SIZE][Sudoku.DEFAULT_SIZE];
         }
         repaint();
     }
@@ -213,7 +213,7 @@ public class SudokuGridPanel extends JPanel {
         repaint();
     }
 
-    private int getCellSize() { return GRID_PIXELS / 9; }
+    private int getCellSize() { return GRID_PIXELS / Sudoku.DEFAULT_SIZE; }
 
     @Override public Dimension getPreferredSize() { return new Dimension(GRID_PIXELS, GRID_PIXELS); }
     @Override public Dimension getMinimumSize()   { return getPreferredSize(); }
@@ -234,8 +234,8 @@ public class SudokuGridPanel extends JPanel {
         int selBoxRow = (selectedRow / 3) * 3;
         int selBoxCol = (selectedCol / 3) * 3;
 
-        for (int r = 0; r < 9; r++) {
-            for (int c = 0; c < 9; c++) {
+        for (int r = 0; r < Sudoku.DEFAULT_SIZE; r++) {
+            for (int c = 0; c < Sudoku.DEFAULT_SIZE; c++) {
                 int x = originX + c * cellSize;
                 int y = originY + r * cellSize;
 
@@ -320,7 +320,7 @@ public class SudokuGridPanel extends JPanel {
 
         // griglia sottile
         g2.setColor(Color.LIGHT_GRAY);
-        for (int i = 0; i <= 9; i++) {
+        for (int i = 0; i <= Sudoku.DEFAULT_SIZE; i++) {
             int pos = i * cellSize;
             g2.drawLine(originX, originY + pos, originX + GRID_PIXELS, originY + pos);
             g2.drawLine(originX + pos, originY, originX + pos, originY + GRID_PIXELS);
@@ -329,7 +329,7 @@ public class SudokuGridPanel extends JPanel {
         // griglia spessa
         g2.setStroke(new BasicStroke(3));
         g2.setColor(Color.BLACK);
-        for (int i = 0; i <= 9; i += 3) {
+        for (int i = 0; i <= Sudoku.DEFAULT_SIZE; i += 3) {
             int pos = i * cellSize;
             g2.drawLine(originX, originY + pos, originX + GRID_PIXELS, originY + pos);
             g2.drawLine(originX + pos, originY, originX + pos, originY + GRID_PIXELS);

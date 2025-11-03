@@ -1,13 +1,13 @@
 package leonardo.savona.sudoku.ui.panel;
 
-import leonardo.savona.sudoku.solver.SolverStep;
-import leonardo.savona.sudoku.solver.SudokuSolver;
-import leonardo.savona.sudoku.util.SudokuModelConverter;
-import leonardo.savona.sudoku.model.SudokuBoard;
+import leonardo.savona.sudoku.model.Sudoku;
 import leonardo.savona.sudoku.model.SudokuMetadata;
 import leonardo.savona.sudoku.repository.FileSudokuRepository;
+import leonardo.savona.sudoku.solver.SolverStep;
+import leonardo.savona.sudoku.solver.SudokuSolver;
 import leonardo.savona.sudoku.ui.SudokuPreviewRenderer;
 import leonardo.savona.sudoku.ui.SudokuTemplateEntry;
+import leonardo.savona.sudoku.util.SudokuModelConverter;
 
 import javax.swing.*;
 import java.awt.*;
@@ -69,7 +69,7 @@ public class SolutionPanel extends JPanel {
         center.add(top, BorderLayout.NORTH);
 
         // griglia
-        gridPanel = new SudokuGridPanel(new SudokuBoard());
+        gridPanel = new SudokuGridPanel(new Sudoku());
         gridPanel.setMode(SudokuGridPanel.Mode.SOLVER);
         gridPanel.setInputEnabled(false);
         JPanel gridWrap = new JPanel(new GridBagLayout());
@@ -99,7 +99,7 @@ public class SolutionPanel extends JPanel {
         listModel.clear();
         for (File f : repo.listFiles()) {
             try {
-                SudokuBoard b = repo.load(f);
+                Sudoku b = repo.load(f);
                 SudokuMetadata m = repo.loadMetadata(f);
                 listModel.addElement(new SudokuTemplateEntry(f, b, m));
             } catch (Exception ignored) {}
@@ -145,7 +145,7 @@ public class SolutionPanel extends JPanel {
         if (index < 0 || index >= steps.size()) return;
 
         SolverStep step = steps.get(index);
-        SudokuBoard b = SudokuModelConverter.fromMatrix(step.getMatrix());
+        Sudoku b = SudokuModelConverter.fromMatrix(step.getMatrix());
         gridPanel.setBoard(b);
         gridPanel.setInputEnabled(false);
         gridPanel.setInteractionEnabled(false);

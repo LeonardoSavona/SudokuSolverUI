@@ -1,6 +1,6 @@
 package leonardo.savona.sudoku.util;
 
-import leonardo.savona.sudoku.model.SudokuBoard;
+import leonardo.savona.sudoku.model.Sudoku;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -9,11 +9,11 @@ public final class SudokuHash {
 
     private SudokuHash() {}
 
-    public static String hash(SudokuBoard board) {
+    public static String hash(Sudoku board) {
         // stringa tipo "000000000000003085..." (81 caratteri)
-        StringBuilder sb = new StringBuilder(81);
-        for (int r = 0; r < 9; r++) {
-            for (int c = 0; c < 9; c++) {
+        StringBuilder sb = new StringBuilder(board.getSize() * board.getSize());
+        for (int r = 0; r < board.getSize(); r++) {
+            for (int c = 0; c < board.getSize(); c++) {
                 sb.append(board.getValue(r, c));
             }
         }

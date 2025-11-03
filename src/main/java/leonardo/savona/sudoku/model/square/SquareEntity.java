@@ -1,6 +1,6 @@
-package leonardo.savona.sudoku.solver.model.square;
+package leonardo.savona.sudoku.model.square;
 
-import leonardo.savona.sudoku.solver.model.Cell;
+import leonardo.savona.sudoku.model.Cell;
 
 import java.util.*;
 import java.util.stream.Collectors;

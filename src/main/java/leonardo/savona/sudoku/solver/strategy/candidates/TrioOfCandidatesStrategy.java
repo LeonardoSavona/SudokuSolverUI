@@ -1,7 +1,7 @@
 package leonardo.savona.sudoku.solver.strategy.candidates;
 
-import leonardo.savona.sudoku.solver.model.Cell;
-import leonardo.savona.sudoku.solver.model.Sudoku;
+import leonardo.savona.sudoku.model.Cell;
+import leonardo.savona.sudoku.model.Sudoku;
 
 import java.util.HashMap;
 import java.util.HashSet;

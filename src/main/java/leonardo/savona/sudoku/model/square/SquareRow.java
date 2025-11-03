@@ -1,4 +1,4 @@
-package leonardo.savona.sudoku.solver.model.square;
+package leonardo.savona.sudoku.model.square;
 
 public class SquareRow extends SquareEntity {
 

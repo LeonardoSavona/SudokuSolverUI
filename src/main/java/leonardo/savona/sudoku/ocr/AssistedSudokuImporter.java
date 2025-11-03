@@ -1,6 +1,6 @@
 package leonardo.savona.sudoku.ocr;
 
-import leonardo.savona.sudoku.model.SudokuBoard;
+import leonardo.savona.sudoku.model.Sudoku;
 
 import java.awt.image.BufferedImage;
 
@@ -23,7 +23,7 @@ public class AssistedSudokuImporter {
         int size = alignedImage.getWidth();
         int cellSize = size / 9;
 
-        SudokuBoard board = new SudokuBoard();
+        Sudoku board = new Sudoku();
         SimpleDigitRecognizer.Result[][] results = new SimpleDigitRecognizer.Result[9][9];
         boolean[][] lowConfidence = new boolean[9][9];
 
@@ -108,7 +108,7 @@ public class AssistedSudokuImporter {
         return new RecognizedSudoku(board, results, lowConfidence);
     }
 
-    private boolean violatesSudoku(SudokuBoard board, int row, int col, int value) {
+    private boolean violatesSudoku(Sudoku board, int row, int col, int value) {
         if (value == 0) return false;
         // riga
         for (int c = 0; c < 9; c++) {
@@ -133,11 +133,11 @@ public class AssistedSudokuImporter {
     }
 
     public static class RecognizedSudoku {
-        public final SudokuBoard board;
+        public final Sudoku board;
         public final SimpleDigitRecognizer.Result[][] results;
         public final boolean[][] lowConfidence;
 
-        public RecognizedSudoku(SudokuBoard board,
+        public RecognizedSudoku(Sudoku board,
                                 SimpleDigitRecognizer.Result[][] results,
                                 boolean[][] lowConfidence) {
             this.board = board;

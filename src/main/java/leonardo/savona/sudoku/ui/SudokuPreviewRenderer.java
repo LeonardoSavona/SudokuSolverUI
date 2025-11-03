@@ -1,6 +1,6 @@
 package leonardo.savona.sudoku.ui;
 
-import leonardo.savona.sudoku.model.SudokuBoard;
+import leonardo.savona.sudoku.model.Sudoku;
 import leonardo.savona.sudoku.model.SudokuMetadata;
 
 import javax.swing.*;
@@ -48,10 +48,10 @@ public class SudokuPreviewRenderer extends JPanel implements ListCellRenderer<Su
     }
 
     static class MiniBoardPanel extends JPanel {
-        private final SudokuBoard board;
+        private final Sudoku board;
         private final SudokuMetadata meta;
 
-        MiniBoardPanel(SudokuBoard board, SudokuMetadata meta) {
+        MiniBoardPanel(Sudoku board, SudokuMetadata meta) {
             this.board = board;
             this.meta = meta;
             setPreferredSize(new Dimension(120, 120));
