@@ -1,7 +1,7 @@
 package leonardo.savona.sudoku.ui.panel;
 
-import leonardo.savona.sudoku.model.NoteSet;
-import leonardo.savona.sudoku.model.SudokuBoard;
+import leonardo.savona.sudoku.solver.model.NoteSet;
+import leonardo.savona.sudoku.solver.model.Sudoku;
 
 import javax.swing.*;
 import java.awt.*;
@@ -12,19 +12,39 @@ public class SudokuGridPanel extends JPanel {
     public enum Mode { EDITOR, SOLVER }
 
     private static final int GRID_PIXELS = 540;
-    private SudokuBoard board;
+    private Sudoku board;
 
     private int selectedRow = 0;
     private int selectedCol = 0;
     private boolean noteMode = false;
     private boolean inputEnabled = true;   // se false non accetto numeri
+    private boolean interactionEnabled = true; // se false ignoro selezioni e movimenti
     private Mode mode = Mode.SOLVER;
     private Runnable onChange = null;
 
     // 👇 nuovo: celle OCR a bassa confidenza
-    private boolean[][] lowConfidence = new boolean[9][9];
+    private boolean[][] lowConfidence = new boolean[Sudoku.SIZE][Sudoku.SIZE];
+    private Highlight highlight = null;
 
-    public SudokuGridPanel(SudokuBoard board) {
+    public static class Highlight {
+        private final int row;
+        private final int column;
+
+        public Highlight(int row, int column) {
+            this.row = row;
+            this.column = column;
+        }
+
+        public int getRow() {
+            return row;
+        }
+
+        public int getColumn() {
+            return column;
+        }
+    }
+
+    public SudokuGridPanel(Sudoku board) {
         this.board = board;
         setFocusable(true);
         setBackground(Color.WHITE);
@@ -32,6 +52,9 @@ public class SudokuGridPanel extends JPanel {
         // selezione da mouse
         addMouseListener(new MouseAdapter() {
             @Override public void mousePressed(MouseEvent e) {
+                if (!interactionEnabled) {
+                    return;
+                }
                 requestFocusInWindow();
                 int cellSize = getCellSize();
                 int originX = (getWidth() - GRID_PIXELS) / 2;
@@ -57,6 +80,7 @@ public class SudokuGridPanel extends JPanel {
             im.put(KeyStroke.getKeyStroke(k, 0), name);
             am.put(name, new AbstractAction() {
                 @Override public void actionPerformed(ActionEvent e) {
+                    if (!interactionEnabled) return;
                     applyNumber(num);
                     fireChange();
                 }
@@ -69,6 +93,7 @@ public class SudokuGridPanel extends JPanel {
             im.put(KeyStroke.getKeyStroke(k, 0), name);
             am.put(name, new AbstractAction() {
                 @Override public void actionPerformed(ActionEvent e) {
+                    if (!interactionEnabled) return;
                     applyNumber(num);
                     fireChange();
                 }
@@ -81,6 +106,7 @@ public class SudokuGridPanel extends JPanel {
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, 0), "CLEAR");
         am.put("CLEAR", new AbstractAction() {
             @Override public void actionPerformed(ActionEvent e) {
+                if (!interactionEnabled) return;
                 applyNumber(0);
                 fireChange();
             }
@@ -88,14 +114,15 @@ public class SudokuGridPanel extends JPanel {
 
         // frecce
         bindArrow(im, am, KeyEvent.VK_UP,    () -> { if (selectedRow > 0) selectedRow--; repaint(); });
-        bindArrow(im, am, KeyEvent.VK_DOWN,  () -> { if (selectedRow < 8) selectedRow++; repaint(); });
+        bindArrow(im, am, KeyEvent.VK_DOWN,  () -> { if (selectedRow < board.getSize() - 1) selectedRow++; repaint(); });
         bindArrow(im, am, KeyEvent.VK_LEFT,  () -> { if (selectedCol > 0) selectedCol--; repaint(); });
-        bindArrow(im, am, KeyEvent.VK_RIGHT, () -> { if (selectedCol < 8) selectedCol++; repaint(); });
+        bindArrow(im, am, KeyEvent.VK_RIGHT, () -> { if (selectedCol < board.getSize() - 1) selectedCol++; repaint(); });
 
         // toggle note (tasto N)
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_N, 0), "TOGGLE_NOTE");
         am.put("TOGGLE_NOTE", new AbstractAction() {
             @Override public void actionPerformed(ActionEvent e) {
+                if (!interactionEnabled) return;
                 setNoteMode(!noteMode);
             }
         });
@@ -105,7 +132,10 @@ public class SudokuGridPanel extends JPanel {
         String name = "ARROW_" + key;
         im.put(KeyStroke.getKeyStroke(key, 0), name);
         am.put(name, new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent e) { r.run(); }
+            @Override public void actionPerformed(ActionEvent e) {
+                if (!interactionEnabled) return;
+                r.run();
+            }
         });
     }
 
@@ -119,12 +149,26 @@ public class SudokuGridPanel extends JPanel {
         repaint();
     }
 
-    public void setBoard(SudokuBoard board) {
+    public void setInteractionEnabled(boolean enabled) {
+        this.interactionEnabled = enabled;
+        if (!enabled) {
+            this.selectedRow = -1;
+            this.selectedCol = -1;
+        } else if (this.selectedRow < 0 || this.selectedCol < 0) {
+            this.selectedRow = 0;
+            this.selectedCol = 0;
+        }
+        repaint();
+    }
+
+    public void setBoard(Sudoku board) {
         this.board = board;
         this.selectedRow = 0;
         this.selectedCol = 0;
         // quando cambio board azzero anche le lowConfidence
-        this.lowConfidence = new boolean[9][9];
+        int size = board != null ? board.getSize() : Sudoku.SIZE;
+        this.lowConfidence = new boolean[size][size];
+        this.highlight = null;
         repaint();
     }
 
@@ -137,15 +181,22 @@ public class SudokuGridPanel extends JPanel {
 
     // 👇 nuovo: arriva dall'EditorPanel dopo l'import da immagine
     public void setLowConfidence(boolean[][] marks) {
-        if (marks != null && marks.length == 9 && marks[0].length == 9) {
+        int size = board != null ? board.getSize() : Sudoku.SIZE;
+        if (marks != null && marks.length == size && marks[0].length == size) {
             this.lowConfidence = marks;
         } else {
-            this.lowConfidence = new boolean[9][9];
+            this.lowConfidence = new boolean[size][size];
         }
         repaint();
     }
 
+    public void setHighlight(Highlight highlight) {
+        this.highlight = highlight;
+        repaint();
+    }
+
     public void applyNumber(int number) {
+        if (!interactionEnabled) return;
         if (!inputEnabled) return;           // 👈 blocco inserimenti se disattivato
         if (board == null) return;
         int r = selectedRow, c = selectedCol;
@@ -164,7 +215,10 @@ public class SudokuGridPanel extends JPanel {
         repaint();
     }
 
-    private int getCellSize() { return GRID_PIXELS / 9; }
+    private int getCellSize() {
+        int size = board != null ? board.getSize() : Sudoku.SIZE;
+        return GRID_PIXELS / size;
+    }
 
     @Override public Dimension getPreferredSize() { return new Dimension(GRID_PIXELS, GRID_PIXELS); }
     @Override public Dimension getMinimumSize()   { return getPreferredSize(); }
@@ -176,28 +230,34 @@ public class SudokuGridPanel extends JPanel {
         if (board == null) return;
 
         Graphics2D g2 = (Graphics2D) g.create();
+        int size = board.getSize();
         int cellSize = getCellSize();
         int originX = (getWidth() - GRID_PIXELS) / 2;
         int originY = (getHeight() - GRID_PIXELS) / 2;
 
-        boolean hasSel = selectedRow >= 0 && selectedCol >= 0;
+        boolean hasSel = interactionEnabled && selectedRow >= 0 && selectedCol >= 0;
         int selVal = hasSel ? board.getValue(selectedRow, selectedCol) : 0;
-        int selBoxRow = (selectedRow / 3) * 3;
-        int selBoxCol = (selectedCol / 3) * 3;
+        int squareSize = (int) Math.sqrt(size);
+        int selBoxRow = (selectedRow / squareSize) * squareSize;
+        int selBoxCol = (selectedCol / squareSize) * squareSize;
 
-        for (int r = 0; r < 9; r++) {
-            for (int c = 0; c < 9; c++) {
+        for (int r = 0; r < size; r++) {
+            for (int c = 0; c < size; c++) {
                 int x = originX + c * cellSize;
                 int y = originY + r * cellSize;
 
                 Color bg = Color.WHITE;
 
+                if (highlight != null && highlight.getRow() == r && highlight.getColumn() == c) {
+                    bg = new Color(255, 245, 200);
+                }
+
                 // evidenziazioni (solo in solver)
                 if (mode == Mode.SOLVER && hasSel) {
                     boolean sameRow = (r == selectedRow);
                     boolean sameCol = (c == selectedCol);
-                    boolean sameBox = (r >= selBoxRow && r < selBoxRow + 3 &&
-                            c >= selBoxCol && c < selBoxCol + 3);
+                    boolean sameBox = (r >= selBoxRow && r < selBoxRow + squareSize &&
+                            c >= selBoxCol && c < selBoxCol + squareSize);
                     if (sameRow || sameCol || sameBox) {
                         bg = new Color(235, 243, 255);
                     }
@@ -208,7 +268,7 @@ public class SudokuGridPanel extends JPanel {
                 }
 
                 // cella selezionata
-                if (r == selectedRow && c == selectedCol) {
+                if (interactionEnabled && r == selectedRow && c == selectedCol) {
                     bg = new Color(200, 220, 255);
                 }
 
@@ -216,7 +276,7 @@ public class SudokuGridPanel extends JPanel {
                 g2.fillRect(x, y, cellSize, cellSize);
 
                 // 👇 nuovo: overlay giallo per celle a bassa confidenza (prima dei conflitti)
-                if (lowConfidence[r][c]) {
+                if (r < lowConfidence.length && c < lowConfidence[r].length && lowConfidence[r][c]) {
                     g2.setColor(new Color(255, 255, 170, 140));
                     g2.fillRect(x, y, cellSize, cellSize);
                 }
@@ -267,7 +327,7 @@ public class SudokuGridPanel extends JPanel {
 
         // griglia sottile
         g2.setColor(Color.LIGHT_GRAY);
-        for (int i = 0; i <= 9; i++) {
+        for (int i = 0; i <= size; i++) {
             int pos = i * cellSize;
             g2.drawLine(originX, originY + pos, originX + GRID_PIXELS, originY + pos);
             g2.drawLine(originX + pos, originY, originX + pos, originY + GRID_PIXELS);
@@ -276,7 +336,7 @@ public class SudokuGridPanel extends JPanel {
         // griglia spessa
         g2.setStroke(new BasicStroke(3));
         g2.setColor(Color.BLACK);
-        for (int i = 0; i <= 9; i += 3) {
+        for (int i = 0; i <= size; i += squareSize) {
             int pos = i * cellSize;
             g2.drawLine(originX, originY + pos, originX + GRID_PIXELS, originY + pos);
             g2.drawLine(originX + pos, originY, originX + pos, originY + GRID_PIXELS);

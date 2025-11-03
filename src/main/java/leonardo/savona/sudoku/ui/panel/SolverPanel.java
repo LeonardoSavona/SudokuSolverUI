@@ -1,12 +1,12 @@
 package leonardo.savona.sudoku.ui.panel;
 
-import leonardo.savona.sudoku.model.SudokuBoard;
 import leonardo.savona.sudoku.model.SudokuMetadata;
-import leonardo.savona.sudoku.model.SudokuUtils;
 import leonardo.savona.sudoku.repository.FileSudokuRepository;
 import leonardo.savona.sudoku.ui.MainFrame;
 import leonardo.savona.sudoku.ui.SudokuPreviewRenderer;
 import leonardo.savona.sudoku.ui.SudokuTemplateEntry;
+import leonardo.savona.sudoku.solver.model.Sudoku;
+import leonardo.savona.sudoku.solver.model.SudokuModelUtils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,7 +19,7 @@ public class SolverPanel extends JPanel {
     private enum SolveState { IDLE, RUNNING, PAUSED }
 
     private final MainFrame parent;
-    private SudokuBoard board = new SudokuBoard();
+    private Sudoku board = new Sudoku();
     private final SudokuGridPanel gridPanel = new SudokuGridPanel(board);
 
     private final FileSudokuRepository repo = new FileSudokuRepository();
@@ -130,8 +130,8 @@ public class SolverPanel extends JPanel {
     // aggiorna colori dei numeri sotto
     private void updateNumberBar() {
         int[] counts = new int[10];
-        for (int r = 0; r < 9; r++) {
-            for (int c = 0; c < 9; c++) {
+        for (int r = 0; r < board.getSize(); r++) {
+            for (int c = 0; c < board.getSize(); c++) {
                 int v = board.getValue(r, c);
                 if (v >= 1 && v <= 9) counts[v]++;
             }
@@ -160,7 +160,7 @@ public class SolverPanel extends JPanel {
     private void openSelectedFromList() {
         SudokuTemplateEntry sel = previewList.getSelectedValue();
         if (sel == null) return;
-        this.board = cloneBoard(sel.board);
+        this.board = sel.board.copy();
         this.gridPanel.setBoard(this.board);
         this.currentFile = sel.file;
         stopTimer();
@@ -174,16 +174,6 @@ public class SolverPanel extends JPanel {
         gridPanel.setNoteMode(false);
         gridPanel.setInputEnabled(false); // appena aperto: disattivato
         updateNumberBar();
-    }
-
-    private SudokuBoard cloneBoard(SudokuBoard src) {
-        SudokuBoard b = new SudokuBoard();
-        for (int r = 0; r < 9; r++)
-            for (int c = 0; c < 9; c++) {
-                int v = src.getValue(r, c);
-                if (v != 0) b.setValue(r, c, v, true);
-            }
-        return b;
     }
 
     private void startSolving() {
@@ -238,7 +228,7 @@ public class SolverPanel extends JPanel {
     }
 
     private void handleBoardChange() {
-        if (state != SolveState.IDLE && SudokuUtils.isComplete(board)) {
+        if (state != SolveState.IDLE && SudokuModelUtils.isComplete(board)) {
             onSolved();
         }
     }
@@ -278,7 +268,7 @@ public class SolverPanel extends JPanel {
         List<SudokuTemplateEntry> entries = new ArrayList<>();
         for (File f : files) {
             try {
-                SudokuBoard b = repo.load(f);
+                Sudoku b = repo.load(f);
                 SudokuMetadata m = repo.loadMetadata(f);
                 entries.add(new SudokuTemplateEntry(f, b, m));
             } catch (Exception ignored) {}
@@ -293,13 +283,13 @@ public class SolverPanel extends JPanel {
             previewList.setSelectedIndex(0);
             openSelectedFromList();
         } else {
-            this.board = new SudokuBoard();
+            this.board = new Sudoku();
             this.gridPanel.setBoard(this.board);
             updateNumberBar();
         }
     }
 
-    public void setBoard(SudokuBoard b) {
+    public void setBoard(Sudoku b) {
         this.board = b;
         this.gridPanel.setBoard(b);
         stopTimer();

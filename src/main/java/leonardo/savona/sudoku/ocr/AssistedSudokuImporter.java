@@ -1,6 +1,6 @@
 package leonardo.savona.sudoku.ocr;
 
-import leonardo.savona.sudoku.model.SudokuBoard;
+import leonardo.savona.sudoku.solver.model.Sudoku;
 
 import java.awt.image.BufferedImage;
 
@@ -23,7 +23,7 @@ public class AssistedSudokuImporter {
         int size = alignedImage.getWidth();
         int cellSize = size / 9;
 
-        SudokuBoard board = new SudokuBoard();
+        Sudoku board = new Sudoku();
         SimpleDigitRecognizer.Result[][] results = new SimpleDigitRecognizer.Result[9][9];
         boolean[][] lowConfidence = new boolean[9][9];
 
@@ -108,36 +108,17 @@ public class AssistedSudokuImporter {
         return new RecognizedSudoku(board, results, lowConfidence);
     }
 
-    private boolean violatesSudoku(SudokuBoard board, int row, int col, int value) {
+    private boolean violatesSudoku(Sudoku board, int row, int col, int value) {
         if (value == 0) return false;
-        // riga
-        for (int c = 0; c < 9; c++) {
-            if (c == col) continue;
-            if (board.getValue(row, c) == value) return true;
-        }
-        // colonna
-        for (int r = 0; r < 9; r++) {
-            if (r == row) continue;
-            if (board.getValue(r, col) == value) return true;
-        }
-        // box
-        int br = (row / 3) * 3;
-        int bc = (col / 3) * 3;
-        for (int rr = br; rr < br + 3; rr++) {
-            for (int cc = bc; cc < bc + 3; cc++) {
-                if (rr == row && cc == col) continue;
-                if (board.getValue(rr, cc) == value) return true;
-            }
-        }
-        return false;
+        return !board.isValueAllowed(row, col, value);
     }
 
     public static class RecognizedSudoku {
-        public final SudokuBoard board;
+        public final Sudoku board;
         public final SimpleDigitRecognizer.Result[][] results;
         public final boolean[][] lowConfidence;
 
-        public RecognizedSudoku(SudokuBoard board,
+        public RecognizedSudoku(Sudoku board,
                                 SimpleDigitRecognizer.Result[][] results,
                                 boolean[][] lowConfidence) {
             this.board = board;

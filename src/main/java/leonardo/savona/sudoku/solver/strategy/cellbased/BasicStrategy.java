@@ -3,7 +3,7 @@ package leonardo.savona.sudoku.solver.strategy.cellbased;
 import leonardo.savona.sudoku.solver.model.Cell;
 import leonardo.savona.sudoku.solver.model.Coordinate;
 import leonardo.savona.sudoku.solver.model.Sudoku;
-import leonardo.savona.sudoku.solver.Helper;
+import leonardo.savona.sudoku.solver.model.SudokuModelUtils;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -24,7 +24,7 @@ public class BasicStrategy extends CellBasedStrategy {
     @Override
     public void apply() {
         if (cell.isNumberFound()) {
-            Helper.clearOtherCellsPossibleValues(cell, sudoku);
+            SudokuModelUtils.clearOtherCellsPossibleValues(cell, sudoku);
             return;
         }
 
@@ -34,21 +34,21 @@ public class BasicStrategy extends CellBasedStrategy {
 
         cell.getPossibleValues().removeIf(n -> !rawMissingNumbers.contains(n));
         if (cell.isNumberFound()) {
-            Helper.clearOtherCellsPossibleValues(cell, sudoku);
+            SudokuModelUtils.clearOtherCellsPossibleValues(cell, sudoku);
             return;
         }
 
         Set<Integer> colMissingNumbers = getMissingNumbersFromColumn(cell.getCoordinate().getColumn());
         cell.getPossibleValues().removeIf(n -> !colMissingNumbers.contains(n));
         if (cell.isNumberFound()) {
-            Helper.clearOtherCellsPossibleValues(cell, sudoku);
+            SudokuModelUtils.clearOtherCellsPossibleValues(cell, sudoku);
             return;
         }
 
         Set<Integer> squareMissingNumbers = getMissingNumbersFromSquare(cell);
         cell.getPossibleValues().removeIf(n -> !squareMissingNumbers.contains(n));
         if (cell.isNumberFound()) {
-            Helper.clearOtherCellsPossibleValues(cell, sudoku);
+            SudokuModelUtils.clearOtherCellsPossibleValues(cell, sudoku);
         }
     }
 

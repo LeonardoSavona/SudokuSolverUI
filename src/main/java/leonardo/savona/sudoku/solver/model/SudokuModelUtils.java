@@ -1,8 +1,5 @@
-package leonardo.savona.sudoku.solver;
+package leonardo.savona.sudoku.solver.model;
 
-import leonardo.savona.sudoku.solver.model.Cell;
-import leonardo.savona.sudoku.solver.model.Coordinate;
-import leonardo.savona.sudoku.solver.model.Sudoku;
 import leonardo.savona.sudoku.solver.model.square.Square;
 
 import java.util.HashMap;
@@ -11,7 +8,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Helper {
+public final class SudokuModelUtils {
+
+    private SudokuModelUtils() {}
 
     public static Map<Coordinate, Set<Coordinate>> getCoordinatesSquare(int size) {
         Map<Coordinate, Set<Coordinate>> coordinatesSquares = new HashMap<>();
@@ -20,7 +19,7 @@ public class Helper {
 
         for (int r = 0; r < size; r += sq) {
             for (int c = 0; c < size; c += sq) {
-                Coordinate coordinate = new Coordinate(r,c);
+                Coordinate coordinate = new Coordinate(r, c);
                 Set<Coordinate> otherCoordinates = getOtherCoordinates(coordinate, sq);
 
                 coordinatesSquares.put(coordinate, otherCoordinates);
@@ -81,7 +80,7 @@ public class Helper {
             if (c.getCoordinate().getRow() == cell.getCoordinate().getRow() && !c.getPossibleValues().isEmpty()){
                 c.removePossibleValue(cell.getValue());
                 if (c.isNumberFound()) {
-                    Helper.clearOtherCellsPossibleValues(c, sudoku);
+                    SudokuModelUtils.clearOtherCellsPossibleValues(c, sudoku);
                 }
             }
         });
@@ -92,7 +91,7 @@ public class Helper {
             if (c.getCoordinate().getColumn() == cell.getCoordinate().getColumn() && !c.getPossibleValues().isEmpty()){
                 c.removePossibleValue(cell.getValue());
                 if (c.isNumberFound()) {
-                    Helper.clearOtherCellsPossibleValues(c, sudoku);
+                    SudokuModelUtils.clearOtherCellsPossibleValues(c, sudoku);
                 }
             }
         });
@@ -105,7 +104,7 @@ public class Helper {
             if (!cell1.getPossibleValues().isEmpty()) {
                 cell1.removePossibleValue(cell.getValue());
                 if (cell1.isNumberFound()) {
-                    Helper.clearOtherCellsPossibleValues(cell1, sudoku);
+                    SudokuModelUtils.clearOtherCellsPossibleValues(cell1, sudoku);
                 }
             }
         }
@@ -113,5 +112,34 @@ public class Helper {
 
     public static Square getSquareFromCell(Sudoku sudoku, Cell cell) {
         return sudoku.getSquares().stream().filter(s -> s.getCells().contains(cell)).findFirst().get();
+    }
+
+    public static boolean isComplete(Sudoku board) {
+        for (int r = 0; r < board.getSize(); r++) {
+            for (int c = 0; c < board.getSize(); c++) {
+                if (board.getValue(r, c) == 0) return false;
+                if (board.isCellInConflict(r, c)) return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean hasConflicts(Sudoku board) {
+        for (int r = 0; r < board.getSize(); r++) {
+            for (int c = 0; c < board.getSize(); c++) {
+                int v = board.getValue(r, c);
+                if (v != 0 && !board.isValueAllowed(r, c, v)) return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean hasAnyNumber(Sudoku board) {
+        for (int r = 0; r < board.getSize(); r++) {
+            for (int c = 0; c < board.getSize(); c++) {
+                if (board.getValue(r, c) != 0) return true;
+            }
+        }
+        return false;
     }
 }

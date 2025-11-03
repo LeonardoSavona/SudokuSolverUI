@@ -1,6 +1,6 @@
 package leonardo.savona.sudoku.solver.model;
 
-import leonardo.savona.sudoku.solver.Helper;
+import leonardo.savona.sudoku.solver.model.SudokuModelUtils;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -12,6 +12,8 @@ public class Cell {
     private final Sudoku sudoku;
     private int value;
     private Set<Integer> possibleValues = new HashSet<>();
+    private boolean fixed;
+    private final NoteSet notes = new NoteSet();
 
     public Cell(Coordinate coordinate, int value, Sudoku sudoku) {
         this.coordinate = coordinate;
@@ -49,13 +51,16 @@ public class Cell {
 
     public void setValue(Integer value) {
         this.value = value;
+        if (value != 0) {
+            notes.clear();
+        }
     }
 
     public boolean isNumberFound() {
         if (getPossibleValues().size() == 1) {
             setValue((Integer) getPossibleValues().toArray()[0]);
             clearPossibleValues();
-            Helper.clearOtherCellsPossibleValues(this, sudoku);
+            SudokuModelUtils.clearOtherCellsPossibleValues(this, sudoku);
             return true;
         }
         return false;
@@ -63,6 +68,22 @@ public class Cell {
 
     public boolean isEmpty() {
         return getValue() == 0 && getPossibleValues().isEmpty();
+    }
+
+    public boolean isFixed() {
+        return fixed;
+    }
+
+    public void setFixed(boolean fixed) {
+        this.fixed = fixed;
+    }
+
+    public NoteSet getNotes() {
+        return notes;
+    }
+
+    public void clearNotes() {
+        notes.clear();
     }
 
     @Override

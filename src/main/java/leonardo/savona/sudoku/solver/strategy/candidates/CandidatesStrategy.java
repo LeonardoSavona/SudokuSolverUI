@@ -2,8 +2,8 @@ package leonardo.savona.sudoku.solver.strategy.candidates;
 
 import leonardo.savona.sudoku.solver.model.Cell;
 import leonardo.savona.sudoku.solver.model.Sudoku;
+import leonardo.savona.sudoku.solver.model.SudokuModelUtils;
 import leonardo.savona.sudoku.solver.model.square.Square;
-import leonardo.savona.sudoku.solver.Helper;
 import leonardo.savona.sudoku.solver.strategy.Strategy;
 
 import java.util.HashSet;
@@ -47,7 +47,7 @@ public abstract class CandidatesStrategy extends Strategy {
     }
 
     protected Set<Cell> getNotEmptySquareCells(Cell cell) {
-        Square square = Helper.getSquareFromCell(sudoku, cell);
+        Square square = SudokuModelUtils.getSquareFromCell(sudoku, cell);
         return getNotEmptyCells(square.getCells());
     }
 

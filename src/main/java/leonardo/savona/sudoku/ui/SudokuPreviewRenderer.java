@@ -1,7 +1,7 @@
 package leonardo.savona.sudoku.ui;
 
-import leonardo.savona.sudoku.model.SudokuBoard;
 import leonardo.savona.sudoku.model.SudokuMetadata;
+import leonardo.savona.sudoku.solver.model.Sudoku;
 
 import javax.swing.*;
 import java.awt.*;
@@ -48,10 +48,10 @@ public class SudokuPreviewRenderer extends JPanel implements ListCellRenderer<Su
     }
 
     static class MiniBoardPanel extends JPanel {
-        private final SudokuBoard board;
+        private final Sudoku board;
         private final SudokuMetadata meta;
 
-        MiniBoardPanel(SudokuBoard board, SudokuMetadata meta) {
+        MiniBoardPanel(Sudoku board, SudokuMetadata meta) {
             this.board = board;
             this.meta = meta;
             setPreferredSize(new Dimension(120, 120));
@@ -70,9 +70,10 @@ public class SudokuPreviewRenderer extends JPanel implements ListCellRenderer<Su
             int w = getWidth();
             int h = getHeight();
 
+            int gridSize = board.getSize();
             int size = Math.min(w, h);
-            int cs = size / 9;
-            size = cs * 9; // 👈 niente sbordo
+            int cs = size / gridSize;
+            size = cs * gridSize; // 👈 niente sbordo
             int ox = (w - size) / 2;
             int oy = (h - size) / 2;
 
@@ -83,8 +84,8 @@ public class SudokuPreviewRenderer extends JPanel implements ListCellRenderer<Su
             g2.setColor(Color.BLACK);
             Font original = g2.getFont();
             g2.setFont(original.deriveFont(Font.BOLD, cs * 0.45f));
-            for (int r = 0; r < 9; r++) {
-                for (int c = 0; c < 9; c++) {
+            for (int r = 0; r < gridSize; r++) {
+                for (int c = 0; c < gridSize; c++) {
                     int v = board.getValue(r, c);
                     if (v != 0) {
                         String s = String.valueOf(v);
@@ -99,7 +100,7 @@ public class SudokuPreviewRenderer extends JPanel implements ListCellRenderer<Su
 
             // griglia fine
             g2.setColor(Color.LIGHT_GRAY);
-            for (int i = 0; i <= 9; i++) {
+            for (int i = 0; i <= gridSize; i++) {
                 int p = i * cs;
                 g2.drawLine(ox, oy + p, ox + size, oy + p);
                 g2.drawLine(ox + p, oy, ox + p, oy + size);
@@ -107,7 +108,8 @@ public class SudokuPreviewRenderer extends JPanel implements ListCellRenderer<Su
             // griglia spessa
             g2.setStroke(new BasicStroke(2));
             g2.setColor(Color.BLACK);
-            for (int i = 0; i <= 9; i += 3) {
+            int squareSize = (int) Math.sqrt(gridSize);
+            for (int i = 0; i <= gridSize; i += squareSize) {
                 int p = i * cs;
                 g2.drawLine(ox, oy + p, ox + size, oy + p);
                 g2.drawLine(ox + p, oy, ox + p, oy + size);

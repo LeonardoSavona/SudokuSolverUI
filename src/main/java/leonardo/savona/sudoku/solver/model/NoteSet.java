@@ -1,4 +1,4 @@
-package leonardo.savona.sudoku.model;
+package leonardo.savona.sudoku.solver.model;
 
 import java.util.Arrays;
 
@@ -40,5 +40,13 @@ public class NoteSet {
 
     public boolean[] getAll() {
         return Arrays.copyOf(notes, notes.length);
+    }
+
+    public void setAll(boolean[] values) {
+        clear();
+        if (values == null) {
+            return;
+        }
+        System.arraycopy(values, 0, notes, 0, Math.min(values.length, notes.length));
     }
 }

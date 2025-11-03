@@ -1,8 +1,8 @@
 package leonardo.savona.sudoku.repository;
 
 import leonardo.savona.sudoku.io.SudokuIO;
-import leonardo.savona.sudoku.model.SudokuBoard;
 import leonardo.savona.sudoku.model.SudokuMetadata;
+import leonardo.savona.sudoku.solver.model.Sudoku;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,11 +40,11 @@ public class FileSudokuRepository {
         return out;
     }
 
-    public SudokuBoard load(File f) throws IOException {
+    public Sudoku load(File f) throws IOException {
         return SudokuIO.loadFromFile(f);
     }
 
-    public void save(SudokuBoard board, File file) throws IOException {
+    public void save(Sudoku board, File file) throws IOException {
         SudokuIO.saveToFile(board, file);
     }
 
