@@ -18,11 +18,31 @@ public class SudokuGridPanel extends JPanel {
     private int selectedCol = 0;
     private boolean noteMode = false;
     private boolean inputEnabled = true;   // se false non accetto numeri
+    private boolean interactionEnabled = true; // se false ignoro selezioni e movimenti
     private Mode mode = Mode.SOLVER;
     private Runnable onChange = null;
 
     // 👇 nuovo: celle OCR a bassa confidenza
     private boolean[][] lowConfidence = new boolean[9][9];
+    private Highlight highlight = null;
+
+    public static class Highlight {
+        private final int row;
+        private final int column;
+
+        public Highlight(int row, int column) {
+            this.row = row;
+            this.column = column;
+        }
+
+        public int getRow() {
+            return row;
+        }
+
+        public int getColumn() {
+            return column;
+        }
+    }
 
     public SudokuGridPanel(SudokuBoard board) {
         this.board = board;
@@ -32,6 +52,9 @@ public class SudokuGridPanel extends JPanel {
         // selezione da mouse
         addMouseListener(new MouseAdapter() {
             @Override public void mousePressed(MouseEvent e) {
+                if (!interactionEnabled) {
+                    return;
+                }
                 requestFocusInWindow();
                 int cellSize = getCellSize();
                 int originX = (getWidth() - GRID_PIXELS) / 2;
@@ -57,6 +80,7 @@ public class SudokuGridPanel extends JPanel {
             im.put(KeyStroke.getKeyStroke(k, 0), name);
             am.put(name, new AbstractAction() {
                 @Override public void actionPerformed(ActionEvent e) {
+                    if (!interactionEnabled) return;
                     applyNumber(num);
                     fireChange();
                 }
@@ -69,6 +93,7 @@ public class SudokuGridPanel extends JPanel {
             im.put(KeyStroke.getKeyStroke(k, 0), name);
             am.put(name, new AbstractAction() {
                 @Override public void actionPerformed(ActionEvent e) {
+                    if (!interactionEnabled) return;
                     applyNumber(num);
                     fireChange();
                 }
@@ -81,6 +106,7 @@ public class SudokuGridPanel extends JPanel {
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, 0), "CLEAR");
         am.put("CLEAR", new AbstractAction() {
             @Override public void actionPerformed(ActionEvent e) {
+                if (!interactionEnabled) return;
                 applyNumber(0);
                 fireChange();
             }
@@ -96,6 +122,7 @@ public class SudokuGridPanel extends JPanel {
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_N, 0), "TOGGLE_NOTE");
         am.put("TOGGLE_NOTE", new AbstractAction() {
             @Override public void actionPerformed(ActionEvent e) {
+                if (!interactionEnabled) return;
                 setNoteMode(!noteMode);
             }
         });
@@ -105,7 +132,10 @@ public class SudokuGridPanel extends JPanel {
         String name = "ARROW_" + key;
         im.put(KeyStroke.getKeyStroke(key, 0), name);
         am.put(name, new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent e) { r.run(); }
+            @Override public void actionPerformed(ActionEvent e) {
+                if (!interactionEnabled) return;
+                r.run();
+            }
         });
     }
 
@@ -119,12 +149,25 @@ public class SudokuGridPanel extends JPanel {
         repaint();
     }
 
+    public void setInteractionEnabled(boolean enabled) {
+        this.interactionEnabled = enabled;
+        if (!enabled) {
+            this.selectedRow = -1;
+            this.selectedCol = -1;
+        } else if (this.selectedRow < 0 || this.selectedCol < 0) {
+            this.selectedRow = 0;
+            this.selectedCol = 0;
+        }
+        repaint();
+    }
+
     public void setBoard(SudokuBoard board) {
         this.board = board;
         this.selectedRow = 0;
         this.selectedCol = 0;
         // quando cambio board azzero anche le lowConfidence
         this.lowConfidence = new boolean[9][9];
+        this.highlight = null;
         repaint();
     }
 
@@ -145,7 +188,13 @@ public class SudokuGridPanel extends JPanel {
         repaint();
     }
 
+    public void setHighlight(Highlight highlight) {
+        this.highlight = highlight;
+        repaint();
+    }
+
     public void applyNumber(int number) {
+        if (!interactionEnabled) return;
         if (!inputEnabled) return;           // 👈 blocco inserimenti se disattivato
         if (board == null) return;
         int r = selectedRow, c = selectedCol;
@@ -180,7 +229,7 @@ public class SudokuGridPanel extends JPanel {
         int originX = (getWidth() - GRID_PIXELS) / 2;
         int originY = (getHeight() - GRID_PIXELS) / 2;
 
-        boolean hasSel = selectedRow >= 0 && selectedCol >= 0;
+        boolean hasSel = interactionEnabled && selectedRow >= 0 && selectedCol >= 0;
         int selVal = hasSel ? board.getValue(selectedRow, selectedCol) : 0;
         int selBoxRow = (selectedRow / 3) * 3;
         int selBoxCol = (selectedCol / 3) * 3;
@@ -191,6 +240,10 @@ public class SudokuGridPanel extends JPanel {
                 int y = originY + r * cellSize;
 
                 Color bg = Color.WHITE;
+
+                if (highlight != null && highlight.getRow() == r && highlight.getColumn() == c) {
+                    bg = new Color(255, 245, 200);
+                }
 
                 // evidenziazioni (solo in solver)
                 if (mode == Mode.SOLVER && hasSel) {
@@ -208,7 +261,7 @@ public class SudokuGridPanel extends JPanel {
                 }
 
                 // cella selezionata
-                if (r == selectedRow && c == selectedCol) {
+                if (interactionEnabled && r == selectedRow && c == selectedCol) {
                     bg = new Color(200, 220, 255);
                 }
 

@@ -1,5 +1,6 @@
 package leonardo.savona.sudoku.ui.panel;
 
+import leonardo.savona.sudoku.solver.SolverStep;
 import leonardo.savona.sudoku.solver.SudokuSolver;
 import leonardo.savona.sudoku.util.SudokuModelConverter;
 import leonardo.savona.sudoku.model.SudokuBoard;
@@ -29,7 +30,7 @@ public class SolutionPanel extends JPanel {
     private final JLabel stepLabel;
 
     private SudokuTemplateEntry currentEntry;
-    private List<int[][]> steps = Collections.emptyList();
+    private List<SolverStep> steps = Collections.emptyList();
     private int currentStepIndex = -1;
 
     public SolutionPanel() {
@@ -110,6 +111,8 @@ public class SolutionPanel extends JPanel {
         // mostriamo il sudoku com'è (input disabilitato)
         this.gridPanel.setBoard(entry.board);
         this.gridPanel.setInputEnabled(false);
+        this.gridPanel.setInteractionEnabled(false);
+        this.gridPanel.setHighlight(null);
         this.steps = Collections.emptyList();
         this.currentStepIndex = -1;
         updateStepLabel();
@@ -120,7 +123,7 @@ public class SolutionPanel extends JPanel {
     private void onSolve() {
         if (currentEntry == null) return;
         // chiamiamo il runner che usa il modulo esterno
-        List<int[][]> chronology = SudokuSolver.solveAndGetSteps(currentEntry.board);
+        List<SolverStep> chronology = SudokuSolver.solveAndGetSteps(currentEntry.board);
         this.steps = chronology;
         if (chronology.isEmpty()) {
             currentStepIndex = -1;
@@ -128,6 +131,7 @@ public class SolutionPanel extends JPanel {
             stepLabel.setText("Nessuna soluzione trovata");
             prevBtn.setEnabled(false);
             nextBtn.setEnabled(false);
+            gridPanel.setHighlight(null);
         } else {
             // mostriamo il primo step
             showStep(0);
@@ -140,10 +144,17 @@ public class SolutionPanel extends JPanel {
         if (steps == null || steps.isEmpty()) return;
         if (index < 0 || index >= steps.size()) return;
 
-        int[][] matrix = steps.get(index);
-        SudokuBoard b = SudokuModelConverter.fromMatrix(matrix);
+        SolverStep step = steps.get(index);
+        SudokuBoard b = SudokuModelConverter.fromMatrix(step.getMatrix());
         gridPanel.setBoard(b);
         gridPanel.setInputEnabled(false);
+        gridPanel.setInteractionEnabled(false);
+
+        if (step.getRow() != null && step.getColumn() != null) {
+            gridPanel.setHighlight(new SudokuGridPanel.Highlight(step.getRow(), step.getColumn()));
+        } else {
+            gridPanel.setHighlight(null);
+        }
 
         currentStepIndex = index;
         updateStepLabel();
@@ -156,7 +167,21 @@ public class SolutionPanel extends JPanel {
         if (steps == null || steps.isEmpty() || currentStepIndex < 0) {
             stepLabel.setText("Nessuna soluzione");
         } else {
-            stepLabel.setText("Passo " + (currentStepIndex + 1) + " / " + steps.size());
+            SolverStep step = steps.get(currentStepIndex);
+            if (step.getRow() != null && step.getColumn() != null && step.getValue() != null) {
+                String strategy = step.getStrategy() == null ? "" : " (" + step.getStrategy() + ")";
+                stepLabel.setText(String.format(
+                        "Passo %d / %d – R%dC%d = %d%s",
+                        currentStepIndex + 1,
+                        steps.size(),
+                        step.getRow() + 1,
+                        step.getColumn() + 1,
+                        step.getValue(),
+                        strategy
+                ));
+            } else {
+                stepLabel.setText(String.format("Passo %d / %d – Stato iniziale", currentStepIndex + 1, steps.size()));
+            }
         }
     }
 }

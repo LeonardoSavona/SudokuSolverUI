@@ -1,6 +1,7 @@
 package leonardo.savona.sudoku.util;
 
 import leonardo.savona.sudoku.model.SudokuBoard;
+import leonardo.savona.sudoku.solver.model.Cell;
 import leonardo.savona.sudoku.solver.model.Coordinate;
 import leonardo.savona.sudoku.solver.model.Sudoku;
 
@@ -48,6 +49,17 @@ public class SudokuModelConverter {
     public static Sudoku toExternalSudoku(SudokuBoard board) {
         int[][] m = toMatrix(board);
         return new Sudoku(m);
+    }
+
+    public static int[][] toMatrix(Sudoku sudoku) {
+        int size = sudoku.getSize();
+        int[][] matrix = new int[size][size];
+        for (Cell cell : sudoku.getSudoku()) {
+            int row = cell.getCoordinate().getRow();
+            int col = cell.getCoordinate().getColumn();
+            matrix[row][col] = cell.getValue();
+        }
+        return matrix;
     }
 
     public static String getSudokuAsStandardString(Sudoku sudoku) {
