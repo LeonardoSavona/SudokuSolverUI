@@ -71,6 +71,7 @@ public class SolutionPanel extends JPanel {
         gridPanel = new SudokuGridPanel(new SudokuBoard());
         gridPanel.setMode(SudokuGridPanel.Mode.SOLVER);
         gridPanel.setInputEnabled(false);
+        gridPanel.setInteractionEnabled(false);
         JPanel gridWrap = new JPanel(new GridBagLayout());
         gridWrap.add(gridPanel);
         center.add(gridWrap, BorderLayout.CENTER);
@@ -110,6 +111,7 @@ public class SolutionPanel extends JPanel {
         // mostriamo il sudoku com'è (input disabilitato)
         this.gridPanel.setBoard(entry.board);
         this.gridPanel.setInputEnabled(false);
+        this.gridPanel.clearSelection();
         this.steps = Collections.emptyList();
         this.currentStepIndex = -1;
         updateStepLabel();
@@ -128,6 +130,7 @@ public class SolutionPanel extends JPanel {
             stepLabel.setText("Nessuna soluzione trovata");
             prevBtn.setEnabled(false);
             nextBtn.setEnabled(false);
+            gridPanel.clearSelection();
         } else {
             // mostriamo il primo step
             showStep(0);
@@ -144,6 +147,7 @@ public class SolutionPanel extends JPanel {
         SudokuBoard b = SudokuModelConverter.fromMatrix(matrix);
         gridPanel.setBoard(b);
         gridPanel.setInputEnabled(false);
+        highlightStepCell(index);
 
         currentStepIndex = index;
         updateStepLabel();
@@ -157,6 +161,24 @@ public class SolutionPanel extends JPanel {
             stepLabel.setText("Nessuna soluzione");
         } else {
             stepLabel.setText("Passo " + (currentStepIndex + 1) + " / " + steps.size());
+        }
+    }
+
+    private void highlightStepCell(int index) {
+        gridPanel.clearSelection();
+        if (steps == null || steps.isEmpty()) return;
+        if (index <= 0) return;
+
+        int[][] current = steps.get(index);
+        int[][] previous = steps.get(index - 1);
+
+        for (int r = 0; r < current.length; r++) {
+            for (int c = 0; c < current[r].length; c++) {
+                if (current[r][c] != previous[r][c]) {
+                    gridPanel.setSelectedCell(r, c);
+                    return;
+                }
+            }
         }
     }
 }
