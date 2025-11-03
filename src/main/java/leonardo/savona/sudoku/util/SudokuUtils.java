@@ -147,6 +147,6 @@ public final class SudokuUtils {
     }
 
     public static Square getSquareFromCell(Sudoku sudoku, Cell cell) {
-        return sudoku.getSquares().stream().filter(s -> s.getCells().contains(cell)).findFirst().orElseThrow();
+        return sudoku.getSquares().stream().filter(s -> s.getCells().contains(cell)).findFirst().get();
     }
 }
