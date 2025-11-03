@@ -1,5 +1,6 @@
 package leonardo.savona.sudoku.solver.strategy.candidates;
 
+import leonardo.savona.sudoku.solver.Helper;
 import leonardo.savona.sudoku.solver.model.Cell;
 import leonardo.savona.sudoku.solver.model.Sudoku;
 
@@ -7,12 +8,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 public class CoupleOfCandidatesStrategy extends CandidatesStrategy {
 
-    public CoupleOfCandidatesStrategy(Sudoku sudoku) {
-        super(sudoku);
+    public CoupleOfCandidatesStrategy(Sudoku sudoku, BiConsumer<Cell, String> onValuePlaced) {
+        super(sudoku, onValuePlaced);
     }
 
     @Override
@@ -42,7 +44,13 @@ public class CoupleOfCandidatesStrategy extends CandidatesStrategy {
                     for (int possibleCellNumber : possibleCellsNumbers) {
                         cells.stream()
                                 .filter(c -> !cellsCouple.contains(c))
-                                .forEach(c -> c.removePossibleValue(possibleCellNumber));
+                                .forEach(c -> {
+                                    c.removePossibleValue(possibleCellNumber);
+                                    if (c.isNumberFound()) {
+                                        Helper.clearOtherCellsPossibleValues(c, sudoku);
+                                        notifyValuePlacement(c, "Coppie di candidati");
+                                    }
+                                });
                     }
                 }
             }

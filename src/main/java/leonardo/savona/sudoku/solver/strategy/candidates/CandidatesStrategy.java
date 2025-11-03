@@ -1,19 +1,20 @@
 package leonardo.savona.sudoku.solver.strategy.candidates;
 
+import leonardo.savona.sudoku.solver.Helper;
 import leonardo.savona.sudoku.solver.model.Cell;
 import leonardo.savona.sudoku.solver.model.Sudoku;
 import leonardo.savona.sudoku.solver.model.square.Square;
-import leonardo.savona.sudoku.solver.Helper;
 import leonardo.savona.sudoku.solver.strategy.Strategy;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 public abstract class CandidatesStrategy extends Strategy {
 
-    public CandidatesStrategy(Sudoku sudoku) {
-        super(sudoku);
+    public CandidatesStrategy(Sudoku sudoku, BiConsumer<Cell, String> onValuePlaced) {
+        super(sudoku, onValuePlaced);
     }
 
     @Override

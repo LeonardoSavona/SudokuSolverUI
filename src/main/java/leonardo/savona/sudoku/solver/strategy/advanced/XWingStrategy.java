@@ -1,17 +1,19 @@
 package leonardo.savona.sudoku.solver.strategy.advanced;
 
+import leonardo.savona.sudoku.solver.Helper;
 import leonardo.savona.sudoku.solver.model.Cell;
 import leonardo.savona.sudoku.solver.model.Sudoku;
 import leonardo.savona.sudoku.solver.strategy.Strategy;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 public class XWingStrategy extends Strategy {
 
-    public XWingStrategy(Sudoku sudoku) {
-        super(sudoku);
+    public XWingStrategy(Sudoku sudoku, BiConsumer<Cell, String> onValuePlaced) {
+        super(sudoku, onValuePlaced);
     }
 
     @Override
@@ -106,7 +108,13 @@ public class XWingStrategy extends Strategy {
                                     (vertexWithSameRow.getCoordinate().getColumn() < c.getCoordinate().getColumn() && c.getCoordinate().getColumn() < vertex.getCoordinate().getColumn())
                             )
                     )
-                    .forEach(c -> c.removePossibleValue(candidate));
+                    .forEach(c -> {
+                        c.removePossibleValue(candidate);
+                        if (c.isNumberFound()) {
+                            Helper.clearOtherCellsPossibleValues(c, sudoku);
+                            notifyValuePlacement(c, "Strategia X-Wing");
+                        }
+                    });
 
             Cell vertexWithSameColumn = rectangle.stream()
                     .filter(c -> !c.equals(vertex) && c.getCoordinate().getColumn() == vertex.getCoordinate().getColumn())
@@ -120,7 +128,13 @@ public class XWingStrategy extends Strategy {
                                     (vertexWithSameColumn.getCoordinate().getRow() < c.getCoordinate().getRow() && c.getCoordinate().getRow() < vertex.getCoordinate().getRow())
                             )
                     )
-                    .forEach(c -> c.removePossibleValue(candidate));
+                    .forEach(c -> {
+                        c.removePossibleValue(candidate);
+                        if (c.isNumberFound()) {
+                            Helper.clearOtherCellsPossibleValues(c, sudoku);
+                            notifyValuePlacement(c, "Strategia X-Wing");
+                        }
+                    });
         }
     }
 }

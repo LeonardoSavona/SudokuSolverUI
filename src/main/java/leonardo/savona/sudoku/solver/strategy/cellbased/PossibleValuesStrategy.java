@@ -1,22 +1,23 @@
 package leonardo.savona.sudoku.solver.strategy.cellbased;
 
+import leonardo.savona.sudoku.solver.Helper;
 import leonardo.savona.sudoku.solver.model.Cell;
 import leonardo.savona.sudoku.solver.model.Sudoku;
 import leonardo.savona.sudoku.solver.model.square.Square;
-import leonardo.savona.sudoku.solver.Helper;
 
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 public class PossibleValuesStrategy extends CellBasedStrategy {
 
-    public PossibleValuesStrategy(Sudoku sudoku) {
-        super(sudoku);
+    public PossibleValuesStrategy(Sudoku sudoku, BiConsumer<Cell, String> onValuePlaced) {
+        super(sudoku, onValuePlaced);
     }
 
     @Override
     public void apply() {
-       for (int possibleValue : cell.getPossibleValues()) {
+        for (int possibleValue : cell.getPossibleValues()) {
             if (!isPresentInOtherRowsPossibleValues(cell, possibleValue) ||
                     !isPresentInOtherColumnsPossibleValues(cell, possibleValue) ||
                     !isPresentInOtherSquaresPossibleValues(cell, possibleValue)) {
@@ -25,6 +26,7 @@ public class PossibleValuesStrategy extends CellBasedStrategy {
                 cell.addPossibleValue(possibleValue);
                 if (cell.isNumberFound()) {
                     Helper.clearOtherCellsPossibleValues(cell, sudoku);
+                    notifyValuePlacement(cell, "Valori possibili unici");
                 }
                 break;
             }

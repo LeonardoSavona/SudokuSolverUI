@@ -1,17 +1,19 @@
 package leonardo.savona.sudoku.solver.strategy.candidates;
 
+import leonardo.savona.sudoku.solver.Helper;
 import leonardo.savona.sudoku.solver.model.Cell;
 import leonardo.savona.sudoku.solver.model.Sudoku;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 public class HiddenCoupleOfCandidatesStrategy extends CoupleOfCandidatesStrategy {
 
-    public HiddenCoupleOfCandidatesStrategy(Sudoku sudoku) {
-        super(sudoku);
+    public HiddenCoupleOfCandidatesStrategy(Sudoku sudoku, BiConsumer<Cell, String> onValuePlaced) {
+        super(sudoku, onValuePlaced);
     }
 
     @Override
@@ -45,6 +47,13 @@ public class HiddenCoupleOfCandidatesStrategy extends CoupleOfCandidatesStrategy
                         }
                     });
         }
+
+        cells.forEach(c -> {
+            if (c.isNumberFound()) {
+                Helper.clearOtherCellsPossibleValues(c, sudoku);
+                notifyValuePlacement(c, "Coppie nascoste");
+            }
+        });
     }
 
 }

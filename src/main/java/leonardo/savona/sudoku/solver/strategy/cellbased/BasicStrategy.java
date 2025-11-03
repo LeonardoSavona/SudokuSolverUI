@@ -1,23 +1,24 @@
 package leonardo.savona.sudoku.solver.strategy.cellbased;
 
+import leonardo.savona.sudoku.solver.Helper;
 import leonardo.savona.sudoku.solver.model.Cell;
 import leonardo.savona.sudoku.solver.model.Coordinate;
 import leonardo.savona.sudoku.solver.model.Sudoku;
-import leonardo.savona.sudoku.solver.Helper;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 public class BasicStrategy extends CellBasedStrategy {
 
     private final int[] sudokuNumbersToFind;
 
-    public BasicStrategy(Sudoku sudoku) {
-        super(sudoku);
+    public BasicStrategy(Sudoku sudoku, BiConsumer<Cell, String> onValuePlaced) {
+        super(sudoku, onValuePlaced);
         this.sudokuNumbersToFind = new int[sudoku.getSize()];
         for (int i = 0; i < sudoku.getSize(); i++) {
-            sudokuNumbersToFind[i] = i+1;
+            sudokuNumbersToFind[i] = i + 1;
         }
     }
 
@@ -25,16 +26,19 @@ public class BasicStrategy extends CellBasedStrategy {
     public void apply() {
         if (cell.isNumberFound()) {
             Helper.clearOtherCellsPossibleValues(cell, sudoku);
+            notifyValuePlacement(cell, "Strategia base");
             return;
         }
 
         Set<Integer> rawMissingNumbers = getMissingNumbersFromRow(cell.getCoordinate().getRow());
-        if (cell.getPossibleValues().isEmpty())
+        if (cell.getPossibleValues().isEmpty()) {
             cell.setPossibleValues(rawMissingNumbers);
+        }
 
         cell.getPossibleValues().removeIf(n -> !rawMissingNumbers.contains(n));
         if (cell.isNumberFound()) {
             Helper.clearOtherCellsPossibleValues(cell, sudoku);
+            notifyValuePlacement(cell, "Strategia base");
             return;
         }
 
@@ -42,6 +46,7 @@ public class BasicStrategy extends CellBasedStrategy {
         cell.getPossibleValues().removeIf(n -> !colMissingNumbers.contains(n));
         if (cell.isNumberFound()) {
             Helper.clearOtherCellsPossibleValues(cell, sudoku);
+            notifyValuePlacement(cell, "Strategia base");
             return;
         }
 
@@ -49,6 +54,7 @@ public class BasicStrategy extends CellBasedStrategy {
         cell.getPossibleValues().removeIf(n -> !squareMissingNumbers.contains(n));
         if (cell.isNumberFound()) {
             Helper.clearOtherCellsPossibleValues(cell, sudoku);
+            notifyValuePlacement(cell, "Strategia base");
         }
     }
 
