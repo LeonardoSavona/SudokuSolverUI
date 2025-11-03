@@ -28,7 +28,7 @@ public class SudokuSolver {
     private final XWingStrategy xWingStrategy;
 
     private final Chronology chronology;
-    
+
     private SudokuSolver(Sudoku sudoku){
         this.chronology = new Chronology();
         this.sudoku = sudoku;
@@ -43,7 +43,7 @@ public class SudokuSolver {
         this.xWingStrategy = new XWingStrategy(sudoku);
     }
 
-    public static List<int[][]> solveAndGetSteps(SudokuBoard board) {
+    public static List<SolverStep> solveAndGetSteps(SudokuBoard board) {
         try {
             // convertiamo al modello esterno
             Sudoku externalSudoku = SudokuModelConverter.toExternalSudoku(board);
@@ -53,21 +53,26 @@ public class SudokuSolver {
             solver.solve();
 
             // recuperiamo tutti i passaggi
-            List<int[][]> matrices = solver.getSteps();
-            if (matrices.isEmpty()) {
+            List<SolverStep> steps = solver.getSteps();
+            if (steps.isEmpty()) {
                 // in caso di nulla, almeno ritorniamo la board iniziale
-                List<int[][]> single = new ArrayList<>();
-                single.add(SudokuModelConverter.toMatrix(board));
+                List<SolverStep> single = new ArrayList<>();
+                single.add(createFallbackStep(board, "Stato iniziale"));
                 return single;
             }
-            return matrices;
+            return steps;
         } catch (Exception ex) {
             ex.printStackTrace();
             // in caso di errore, ritorniamo solo lo stato iniziale
-            List<int[][]> single = new ArrayList<>();
-            single.add(SudokuModelConverter.toMatrix(board));
+            List<SolverStep> single = new ArrayList<>();
+            single.add(createFallbackStep(board, "Errore durante la risoluzione"));
             return single;
         }
+    }
+
+    private static SolverStep createFallbackStep(SudokuBoard board, String description) {
+        int[][] matrix = SudokuModelConverter.toMatrix(board);
+        return new SolverStep(matrix, null, null, null, description);
     }
 
     private void solve() {
@@ -112,7 +117,7 @@ public class SudokuSolver {
         return sudoku.stream().noneMatch(c -> c.getValue() == 0);
     }
 
-    private List<int[][]> getSteps() {
+    private List<SolverStep> getSteps() {
         return chronology.getSteps();
     }
 }

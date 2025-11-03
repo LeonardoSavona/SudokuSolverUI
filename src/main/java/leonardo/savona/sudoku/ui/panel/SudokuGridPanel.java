@@ -23,6 +23,8 @@ public class SudokuGridPanel extends JPanel {
 
     // 👇 nuovo: celle OCR a bassa confidenza
     private boolean[][] lowConfidence = new boolean[9][9];
+    private Integer highlightedRow = null;
+    private Integer highlightedCol = null;
 
     public SudokuGridPanel(SudokuBoard board) {
         this.board = board;
@@ -125,6 +127,8 @@ public class SudokuGridPanel extends JPanel {
         this.selectedCol = 0;
         // quando cambio board azzero anche le lowConfidence
         this.lowConfidence = new boolean[9][9];
+        this.highlightedRow = null;
+        this.highlightedCol = null;
         repaint();
     }
 
@@ -141,6 +145,28 @@ public class SudokuGridPanel extends JPanel {
             this.lowConfidence = marks;
         } else {
             this.lowConfidence = new boolean[9][9];
+        }
+        repaint();
+    }
+
+    public void setHighlightedCell(Integer row, Integer col) {
+        if (row == null || col == null) {
+            this.highlightedRow = null;
+            this.highlightedCol = null;
+        } else {
+            this.highlightedRow = Math.max(0, Math.min(8, row));
+            this.highlightedCol = Math.max(0, Math.min(8, col));
+        }
+        repaint();
+    }
+
+    public void setSelectedCell(Integer row, Integer col) {
+        if (row == null || col == null) {
+            this.selectedRow = -1;
+            this.selectedCol = -1;
+        } else {
+            this.selectedRow = Math.max(0, Math.min(8, row));
+            this.selectedCol = Math.max(0, Math.min(8, col));
         }
         repaint();
     }
@@ -224,6 +250,11 @@ public class SudokuGridPanel extends JPanel {
                 // conflitto
                 if (board.isCellInConflict(r, c)) {
                     g2.setColor(new Color(255, 200, 200, 160));
+                    g2.fillRect(x, y, cellSize, cellSize);
+                }
+
+                if (highlightedRow != null && highlightedCol != null && r == highlightedRow && c == highlightedCol) {
+                    g2.setColor(new Color(255, 245, 120, 180));
                     g2.fillRect(x, y, cellSize, cellSize);
                 }
 
