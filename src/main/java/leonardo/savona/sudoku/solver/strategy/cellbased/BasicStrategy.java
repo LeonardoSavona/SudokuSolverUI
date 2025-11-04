@@ -23,33 +23,50 @@ public class BasicStrategy extends CellBasedStrategy {
 
     @Override
     public void apply() {
-        if (cell.isNumberFound()) {
+        if (cell.getValue() != 0) {
             SudokuUtils.clearOtherCellsPossibleValues(cell, sudoku);
+            return;
+        }
+
+        if (cell.getPossibleValues().size() == 1 && cell.getValue() == 0) {
+            context.highlightCell(cell);
+            if (cell.isNumberFound()) {
+                SudokuUtils.clearOtherCellsPossibleValues(cell, sudoku);
+            }
             return;
         }
 
         Set<Integer> rawMissingNumbers = getMissingNumbersFromRow(cell.getCoordinate().getRow());
         if (cell.getPossibleValues().isEmpty())
-            cell.setPossibleValues(rawMissingNumbers);
+            cell.setPossibleValues(new HashSet<>(rawMissingNumbers));
 
         cell.getPossibleValues().removeIf(n -> !rawMissingNumbers.contains(n));
-        if (cell.isNumberFound()) {
-            SudokuUtils.clearOtherCellsPossibleValues(cell, sudoku);
+        if (finalizeCell(() -> context.highlightRow(cell))) {
             return;
         }
 
         Set<Integer> colMissingNumbers = getMissingNumbersFromColumn(cell.getCoordinate().getColumn());
         cell.getPossibleValues().removeIf(n -> !colMissingNumbers.contains(n));
-        if (cell.isNumberFound()) {
-            SudokuUtils.clearOtherCellsPossibleValues(cell, sudoku);
+        if (finalizeCell(() -> context.highlightColumn(cell))) {
             return;
         }
 
         Set<Integer> squareMissingNumbers = getMissingNumbersFromSquare(cell);
         cell.getPossibleValues().removeIf(n -> !squareMissingNumbers.contains(n));
-        if (cell.isNumberFound()) {
-            SudokuUtils.clearOtherCellsPossibleValues(cell, sudoku);
+        finalizeCell(() -> context.highlightSquare(cell));
+    }
+
+    private boolean finalizeCell(Runnable highlightAction) {
+        if (cell.getValue() == 0 && cell.getPossibleValues().size() == 1) {
+            if (highlightAction != null) {
+                highlightAction.run();
+            }
+            if (cell.isNumberFound()) {
+                SudokuUtils.clearOtherCellsPossibleValues(cell, sudoku);
+            }
+            return true;
         }
+        return false;
     }
 
     private Set<Integer> getMissingNumbersFromSquare(Cell cell) {

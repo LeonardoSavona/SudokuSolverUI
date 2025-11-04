@@ -39,7 +39,12 @@ public class SquaresStrategy extends Strategy {
                                     !entry.getKey().getCells().contains(c) &&
                                     !c.getPossibleValues().isEmpty()) {
 
+                                boolean removed = c.getPossibleValues().contains(n);
                                 c.removePossibleValue(n);
+                                if (removed && c.getValue() == 0 && c.getPossibleValues().size() == 1) {
+                                    context.highlightRow(c);
+                                    context.highlightCells(c, entry.getKey().getCells());
+                                }
                                 if (c.isNumberFound()) {
                                     SudokuUtils.clearOtherCellsPossibleValues(c, sudoku);
                                 }
@@ -67,7 +72,12 @@ public class SquaresStrategy extends Strategy {
                                     !entry.getKey().getCells().contains(c) &&
                                     !c.getPossibleValues().isEmpty()){
 
+                                boolean removed = c.getPossibleValues().contains(n);
                                 c.removePossibleValue(n);
+                                if (removed && c.getValue() == 0 && c.getPossibleValues().size() == 1) {
+                                    context.highlightColumn(c);
+                                    context.highlightCells(c, entry.getKey().getCells());
+                                }
                                 if (c.isNumberFound()) {
                                     SudokuUtils.clearOtherCellsPossibleValues(c, sudoku);
                                 }
