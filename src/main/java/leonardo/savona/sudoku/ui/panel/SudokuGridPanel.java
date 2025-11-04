@@ -1,5 +1,6 @@
 package leonardo.savona.sudoku.ui.panel;
 
+import leonardo.savona.sudoku.model.Coordinate;
 import leonardo.savona.sudoku.model.NoteSet;
 import leonardo.savona.sudoku.model.Sudoku;
 
@@ -25,22 +26,26 @@ public class SudokuGridPanel extends JPanel {
     // 👇 nuovo: celle OCR a bassa confidenza
     private boolean[][] lowConfidence = new boolean[Sudoku.DEFAULT_SIZE][Sudoku.DEFAULT_SIZE];
     private Highlight highlight = null;
+    private Coordinate focusCell = null;
 
     public static class Highlight {
-        private final int row;
-        private final int column;
+        private final java.util.Set<Coordinate> cells;
 
-        public Highlight(int row, int column) {
-            this.row = row;
-            this.column = column;
+        public Highlight(java.util.Set<Coordinate> cells) {
+            this.cells = cells == null ? java.util.Collections.emptySet() : new java.util.LinkedHashSet<>(cells);
         }
 
-        public int getRow() {
-            return row;
+        public boolean contains(int row, int column) {
+            for (Coordinate coordinate : cells) {
+                if (coordinate.getRow() == row && coordinate.getColumn() == column) {
+                    return true;
+                }
+            }
+            return false;
         }
 
-        public int getColumn() {
-            return column;
+        public java.util.Set<Coordinate> getCells() {
+            return new java.util.LinkedHashSet<>(cells);
         }
     }
 
@@ -168,6 +173,7 @@ public class SudokuGridPanel extends JPanel {
         // quando cambio board azzero anche le lowConfidence
         this.lowConfidence = new boolean[Sudoku.DEFAULT_SIZE][Sudoku.DEFAULT_SIZE];
         this.highlight = null;
+        this.focusCell = null;
         repaint();
     }
 
@@ -190,6 +196,15 @@ public class SudokuGridPanel extends JPanel {
 
     public void setHighlight(Highlight highlight) {
         this.highlight = highlight;
+        repaint();
+    }
+
+    public void setFocusCell(Integer row, Integer column) {
+        if (row == null || column == null || row < 0 || column < 0) {
+            this.focusCell = null;
+        } else {
+            this.focusCell = new Coordinate(row, column);
+        }
         repaint();
     }
 
@@ -241,7 +256,7 @@ public class SudokuGridPanel extends JPanel {
 
                 Color bg = Color.WHITE;
 
-                if (highlight != null && highlight.getRow() == r && highlight.getColumn() == c) {
+                if (highlight != null && highlight.contains(r, c)) {
                     bg = new Color(255, 245, 200);
                 }
 
@@ -263,6 +278,10 @@ public class SudokuGridPanel extends JPanel {
                 // cella selezionata
                 if (interactionEnabled && r == selectedRow && c == selectedCol) {
                     bg = new Color(200, 220, 255);
+                }
+
+                if (focusCell != null && focusCell.getRow() == r && focusCell.getColumn() == c) {
+                    bg = new Color(255, 220, 130);
                 }
 
                 g2.setColor(bg);

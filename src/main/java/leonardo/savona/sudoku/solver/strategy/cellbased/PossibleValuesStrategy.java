@@ -17,14 +17,26 @@ public class PossibleValuesStrategy extends CellBasedStrategy {
     @Override
     public void apply() {
        for (int possibleValue : cell.getPossibleValues()) {
-            if (!isPresentInOtherRowsPossibleValues(cell, possibleValue) ||
-                    !isPresentInOtherColumnsPossibleValues(cell, possibleValue) ||
-                    !isPresentInOtherSquaresPossibleValues(cell, possibleValue)) {
+            boolean uniqueRow = !isPresentInOtherRowsPossibleValues(cell, possibleValue);
+            boolean uniqueColumn = !isPresentInOtherColumnsPossibleValues(cell, possibleValue);
+            boolean uniqueSquare = !isPresentInOtherSquaresPossibleValues(cell, possibleValue);
 
+            if (uniqueRow || uniqueColumn || uniqueSquare) {
                 cell.clearPossibleValues();
                 cell.addPossibleValue(possibleValue);
-                if (cell.isNumberFound()) {
-                    SudokuUtils.clearOtherCellsPossibleValues(cell, sudoku);
+                if (cell.getValue() == 0 && cell.getPossibleValues().size() == 1) {
+                    if (uniqueRow) {
+                        context.highlightRow(cell);
+                    }
+                    if (uniqueColumn) {
+                        context.highlightColumn(cell);
+                    }
+                    if (uniqueSquare) {
+                        context.highlightSquare(cell);
+                    }
+                    if (cell.isNumberFound()) {
+                        SudokuUtils.clearOtherCellsPossibleValues(cell, sudoku);
+                    }
                 }
                 break;
             }

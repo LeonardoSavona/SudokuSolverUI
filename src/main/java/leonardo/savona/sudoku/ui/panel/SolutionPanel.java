@@ -145,15 +145,16 @@ public class SolutionPanel extends JPanel {
         if (index < 0 || index >= steps.size()) return;
 
         SolverStep step = steps.get(index);
-        Sudoku b = SudokuModelConverter.fromMatrix(step.getMatrix());
+        Sudoku b = SudokuModelConverter.fromState(step.getMatrix(), step.getNotes());
         gridPanel.setBoard(b);
         gridPanel.setInputEnabled(false);
         gridPanel.setInteractionEnabled(false);
 
+        gridPanel.setHighlight(step.getHighlightCells().isEmpty() ? null : new SudokuGridPanel.Highlight(step.getHighlightCells()));
         if (step.getRow() != null && step.getColumn() != null) {
-            gridPanel.setHighlight(new SudokuGridPanel.Highlight(step.getRow(), step.getColumn()));
+            gridPanel.setFocusCell(step.getRow(), step.getColumn());
         } else {
-            gridPanel.setHighlight(null);
+            gridPanel.setFocusCell(null, null);
         }
 
         currentStepIndex = index;
@@ -166,6 +167,8 @@ public class SolutionPanel extends JPanel {
     private void updateStepLabel() {
         if (steps == null || steps.isEmpty() || currentStepIndex < 0) {
             stepLabel.setText("Nessuna soluzione");
+            gridPanel.setHighlight(null);
+            gridPanel.setFocusCell(null, null);
         } else {
             SolverStep step = steps.get(currentStepIndex);
             if (step.getRow() != null && step.getColumn() != null && step.getValue() != null) {

@@ -1,6 +1,7 @@
 package leonardo.savona.sudoku.solver;
 
 import leonardo.savona.sudoku.model.Cell;
+import leonardo.savona.sudoku.model.Coordinate;
 import leonardo.savona.sudoku.model.Sudoku;
 import leonardo.savona.sudoku.solver.strategy.SquaresStrategy;
 import leonardo.savona.sudoku.solver.strategy.Strategy;
@@ -14,7 +15,9 @@ import leonardo.savona.sudoku.solver.strategy.cellbased.PossibleValuesStrategy;
 import leonardo.savona.sudoku.util.SudokuModelConverter;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public class SudokuSolver {
 
@@ -29,10 +32,12 @@ public class SudokuSolver {
     private final XWingStrategy xWingStrategy;
 
     private final Chronology chronology;
-    
+    private final StrategyContext context;
+
     private SudokuSolver(Sudoku sudoku){
         this.chronology = new Chronology();
         this.sudoku = sudoku;
+        this.context = new StrategyContext(sudoku);
 
         // strategies
         this.basicStrategy = new BasicStrategy(sudoku);
@@ -42,6 +47,14 @@ public class SudokuSolver {
         this.trioOfCandidatesStrategy = new TrioOfCandidatesStrategy(sudoku);
         this.hiddenCoupleOfCandidatesStrategy = new HiddenCoupleOfCandidatesStrategy(sudoku);
         this.xWingStrategy = new XWingStrategy(sudoku);
+
+        this.basicStrategy.setContext(context);
+        this.possibleValuesStrategy.setContext(context);
+        this.squaresStrategy.setContext(context);
+        this.coupleOfCandidatesStrategy.setContext(context);
+        this.trioOfCandidatesStrategy.setContext(context);
+        this.hiddenCoupleOfCandidatesStrategy.setContext(context);
+        this.xWingStrategy.setContext(context);
     }
 
     public static List<SolverStep> solveAndGetSteps(Sudoku board) {
@@ -53,8 +66,10 @@ public class SudokuSolver {
             List<SolverStep> steps = solver.getSteps();
             if (steps.isEmpty()) {
                 List<SolverStep> single = new ArrayList<>();
-                single.add(SolverStep.ofMatrix(
+                single.add(SolverStep.ofState(
                         SudokuModelConverter.toMatrix(board),
+                        SudokuModelConverter.toNotes(board),
+                        null,
                         null,
                         null,
                         null,
@@ -66,8 +81,10 @@ public class SudokuSolver {
         } catch (RuntimeException ex) {
             ex.printStackTrace();
             List<SolverStep> single = new ArrayList<>();
-            single.add(SolverStep.ofMatrix(
+            single.add(SolverStep.ofState(
                     SudokuModelConverter.toMatrix(board),
+                    SudokuModelConverter.toNotes(board),
+                    null,
                     null,
                     null,
                     null,
@@ -81,7 +98,7 @@ public class SudokuSolver {
         int iterations = 0;
         boolean solved = false;
 
-        chronology.addStep(SolverStep.capture(sudoku, null, null, null, "Stato iniziale"));
+        chronology.addStep(SolverStep.capture(sudoku, null, null, null, "Stato iniziale", null));
         while (!solved && iterations < MAX_ITERATIONS) {
             for (Cell cell : sudoku.getSudoku()) {
                 if (cell.getValue() == 0) {
@@ -110,48 +127,52 @@ public class SudokuSolver {
     }
 
     private void applyCellStrategy(Cell cell, CellBasedStrategy strategy, String strategyName) {
-        int[][] before = SudokuModelConverter.toMatrix(sudoku);
+        Sudoku beforeState = sudoku.copy();
+        int[][] before = SudokuModelConverter.toMatrix(beforeState);
+        context.clear();
         strategy.apply(cell);
-        captureNewValues(before, strategyName);
+        captureNewValues(beforeState, before, strategyName);
     }
 
     private void applyBoardStrategy(Strategy strategy, String strategyName) {
-        int[][] before = SudokuModelConverter.toMatrix(sudoku);
+        Sudoku beforeState = sudoku.copy();
+        int[][] before = SudokuModelConverter.toMatrix(beforeState);
+        context.clear();
         strategy.apply();
-        captureNewValues(before, strategyName);
+        captureNewValues(beforeState, before, strategyName);
     }
 
     private boolean isCompleted(List<Cell> sudoku) {
         return sudoku.stream().noneMatch(c -> c.getValue() == 0);
     }
 
-    private void captureNewValues(int[][] before, String strategyName) {
+    private void captureNewValues(Sudoku beforeState, int[][] before, String strategyName) {
         int[][] after = SudokuModelConverter.toMatrix(sudoku);
         int size = after.length;
-        int[][] incremental = copyMatrix(before);
+        Sudoku incrementalSudoku = beforeState;
         for (int r = 0; r < size; r++) {
             for (int c = 0; c < size; c++) {
                 if (before[r][c] == 0 && after[r][c] != 0) {
-                    incremental[r][c] = after[r][c];
-                    chronology.addStep(SolverStep.ofMatrix(
-                            incremental,
+                    incrementalSudoku.setValue(r, c, after[r][c]);
+                    int[][] snapshot = SudokuModelConverter.toMatrix(incrementalSudoku);
+                    boolean[][][] notes = SudokuModelConverter.toNotes(incrementalSudoku);
+                    Set<Coordinate> highlight = context.consumeHighlight(r, c);
+                    if (highlight == null || highlight.isEmpty()) {
+                        highlight = new LinkedHashSet<>();
+                        highlight.add(new Coordinate(r, c));
+                    }
+                    chronology.addStep(SolverStep.ofState(
+                            snapshot,
+                            notes,
                             r,
                             c,
                             after[r][c],
-                            strategyName
+                            strategyName,
+                            highlight
                     ));
-                    incremental = copyMatrix(incremental);
                 }
             }
         }
-    }
-
-    private int[][] copyMatrix(int[][] source) {
-        int[][] copy = new int[source.length][];
-        for (int i = 0; i < source.length; i++) {
-            copy[i] = java.util.Arrays.copyOf(source[i], source[i].length);
-        }
-        return copy;
     }
 
     private List<SolverStep> getSteps() {
